@@ -1,7 +1,6 @@
 package server
 
 import (
-	"fmt"
 	"github.com/gabstv/sandpiper/pathtree"
 	"github.com/gabstv/sandpiper/route"
 	"github.com/gabstv/sandpiper/util"
@@ -43,6 +42,7 @@ func (s *Server) Run() error {
 	sv := &http.Server{
 		Addr: s.Cfg.ListenAddrTLS,
 	}
+	sv.Handler = s
 	certs := make([]util.Certificate, 0, len(s.domains))
 	for _, v := range s.domains {
 		if v.Certificate.CertFile != "" {
@@ -50,8 +50,6 @@ func (s *Server) Run() error {
 		}
 	}
 	go func() {
-		print("Running on " + sv.Addr + "\n")
-		fmt.Println(certs)
 		errc <- util.ListenAndServeTLSSNI(sv, certs)
 	}()
 	err := <-errc
@@ -68,14 +66,13 @@ func (s *Server) Init() {
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("SERVE HTTP :)")
 	h := r.Host
 	if s.Cfg.Debug {
 		if ho := r.Header.Get("X-Sandpiper-Host"); ho != "" {
 			h = ho
 		}
+		print("H: " + h + "\n")
 	}
-	print("H: " + h + "\n")
 	res := s.trieDomains.Find(h)
 	if res == nil {
 		http.Error(w, "domain not found", http.StatusInternalServerError)

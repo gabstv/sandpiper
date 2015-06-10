@@ -1,0 +1,17 @@
+debug: true
+# If this is set to 0, or absent, it will default to the
+# amount of CPUs available.
+num_cpu: 0
+listen_addr:     :8080
+listen_addr_tls: :8443
+routes:
+  - 
+    domain:        example.com
+    out_conn_type: HTTP
+    out_addr:      localhost:8011
+  - 
+    domain:        example.net
+    out_conn_type: HTTPS_SKIP_VERIFY
+    out_addr:      localhost:8012
+    tls_cert_file: example.net.cert.pem
+    tls_key_file:  example.net.key.pem
