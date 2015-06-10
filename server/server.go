@@ -18,12 +18,16 @@ func Default() *Server {
 	s := &Server{}
 	s.trieDomains = pathtree.NewTrie(".")
 	s.domains = make(map[string]*route.Route, 0)
+	s.Cfg.WebsocketsReadBufferSize = 2048
+	s.Cfg.WebsocketsWriteBufferSize = 2048
 	return s
 }
 
 func (s *Server) Add(r route.Route) error {
 	rr := &route.Route{}
 	*rr = r
+	rr.WsCFG.ReadBufferSize = s.Cfg.WebsocketsReadBufferSize
+	rr.WsCFG.WriteBufferSize = s.Cfg.WebsocketsWriteBufferSize
 	err := s.trieDomains.Add(r.Domain, rr)
 	if err != nil {
 		return err

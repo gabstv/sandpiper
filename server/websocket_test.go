@@ -15,6 +15,7 @@ type wsTestServer struct {
 	t        *testing.T
 	send     chan []byte
 	ws       *websocket.Conn
+	Numm     int
 }
 
 func (s *wsTestServer) wswrite() {
@@ -51,6 +52,7 @@ func (s *wsTestServer) wsread() {
 	for {
 		_, msg, err := s.ws.ReadMessage()
 		if err != nil {
+			s.t.Fatalf("s.ws.ReadMessage '%v'", err)
 			break
 		}
 		s.t.Logf("Received '%v'", string(msg))
@@ -133,7 +135,9 @@ func TestWebsocket(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Could not connect %s", err)
 	}
-	ws.WriteMessage(websocket.TextMessage, []byte("hello 1!"))
+	if e0 := ws.WriteMessage(websocket.TextMessage, []byte("hello 1!")); e0 != nil {
+		t.Fatalf("ws.WriteMessage %s", e0)
+	}
 	time.Sleep(time.Second * 2)
 	ws.WriteMessage(websocket.TextMessage, []byte("hello 2!"))
 	time.Sleep(time.Second * 2)
