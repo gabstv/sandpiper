@@ -52,10 +52,11 @@ func (s *wsTestServer) wsread() {
 	for {
 		_, msg, err := s.ws.ReadMessage()
 		if err != nil {
-			s.t.Fatalf("s.ws.ReadMessage '%v'", err)
+			return // probably EOF
 			break
 		}
 		s.t.Logf("Received '%v'", string(msg))
+		s.Numm++
 	}
 }
 
@@ -138,9 +139,18 @@ func TestWebsocket(t *testing.T) {
 	if e0 := ws.WriteMessage(websocket.TextMessage, []byte("hello 1!")); e0 != nil {
 		t.Fatalf("ws.WriteMessage %s", e0)
 	}
-	time.Sleep(time.Second * 2)
-	ws.WriteMessage(websocket.TextMessage, []byte("hello 2!"))
-	time.Sleep(time.Second * 2)
-	ws.WriteMessage(websocket.TextMessage, []byte("hello 3!"))
+	time.Sleep(time.Second * 1)
+	if e0 := ws.WriteMessage(websocket.TextMessage, []byte("hello 2!")); e0 != nil {
+		t.Fatalf("ws.WriteMessage %s", e0)
+	}
+	time.Sleep(time.Second * 7)
+	if e0 := ws.WriteMessage(websocket.TextMessage, []byte("hello 3!")); e0 != nil {
+		t.Fatalf("ws.WriteMessage %s", e0)
+	}
+	time.Sleep(time.Second * 1)
 	ws.WriteMessage(websocket.CloseMessage, []byte{})
+	time.Sleep(time.Second * 1)
+	if s0.Numm != 3 {
+		t.Fatalf("Should have received 3 messages!")
+	}
 }
