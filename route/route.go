@@ -5,7 +5,7 @@ import (
 	"github.com/gabstv/sandpiper/util"
 	"net"
 	"net/http"
-	"net/http/httputil"
+	//"net/http/httputil"
 	"net/url"
 	"time"
 )
@@ -22,7 +22,7 @@ type Route struct {
 	Domain      string
 	Server      RouteServer //TODO: maybe support load balancing in the future
 	Certificate util.Certificate
-	rp          *httputil.ReverseProxy
+	rp          *util.ReverseProxy
 }
 
 type RouteServer struct {
@@ -43,7 +43,7 @@ func (rs *RouteServer) URL() *url.URL {
 
 func (rt *Route) ReverseProxy(w http.ResponseWriter, r *http.Request) {
 	if rt.rp == nil {
-		rt.rp = httputil.NewSingleHostReverseProxy(rt.Server.URL())
+		rt.rp = util.NewSingleHostReverseProxy(rt.Server.URL())
 		if rt.Server.OutConnType == HTTPS_SKIP_VERIFY {
 			rt.rp.Transport = &http.Transport{
 				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
