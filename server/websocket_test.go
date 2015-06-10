@@ -13,6 +13,54 @@ import (
 type wsTestServer struct {
 	upgrader websocket.Upgrader
 	t        *testing.T
+	send     chan []byte
+	ws       *websocket.Conn
+}
+
+func (s *wsTestServer) wswrite() {
+	ticker := time.NewTicker(time.Second * 50)
+	defer func() {
+		ticker.Stop()
+		s.ws.Close()
+	}()
+	for {
+		select {
+		case msg, ok := <-s.send:
+			if !ok {
+				s.write(websocket.CloseMessage, []byte{})
+				return
+			}
+			if err := s.write(websocket.TextMessage, msg); err != nil {
+				return
+			}
+		case <-ticker.C:
+			if err := s.write(websocket.PingMessage, []byte{}); err != nil {
+				return
+			}
+		}
+	}
+}
+
+func (s *wsTestServer) wsread() {
+	defer func() {
+		s.ws.Close()
+	}()
+	s.ws.SetReadLimit(512)
+	s.ws.SetReadDeadline(time.Now().Add(time.Second * 60))
+	s.ws.SetPongHandler(func(string) error { s.ws.SetReadDeadline(time.Now().Add(time.Second * 60)); return nil })
+	for {
+		_, msg, err := s.ws.ReadMessage()
+		if err != nil {
+			break
+		}
+		s.t.Logf("Received '%v'", string(msg))
+	}
+}
+
+// write writes a message with the given message type and payload.
+func (s *wsTestServer) write(mt int, payload []byte) error {
+	s.ws.SetWriteDeadline(time.Now().Add(time.Second * 10))
+	return s.ws.WriteMessage(mt, payload)
 }
 
 func (t *wsTestServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -21,10 +69,13 @@ func (t *wsTestServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method not allowed", 405)
 		return
 	}
-	_, err := t.upgrader.Upgrade(w, r, nil)
+	ws, err := t.upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		t.t.Fatalf("Websocket upgrader error! %s", err.Error())
 	}
+	t.ws = ws
+	go t.wswrite()
+	t.wsread()
 }
 
 func TestWebsocket(t *testing.T) {
@@ -33,7 +84,8 @@ func TestWebsocket(t *testing.T) {
 			ReadBufferSize:  1024,
 			WriteBufferSize: 1024,
 		},
-		t: t,
+		t:    t,
+		send: make(chan []byte, 256),
 	}
 	go func() {
 		err := http.ListenAndServe(":9099", s0)
@@ -77,8 +129,14 @@ func TestWebsocket(t *testing.T) {
 		t.Fatalf("Dial: %v", err)
 	}
 
-	_, _, err = websocket.NewClient(c, uri, h, 1024, 1024)
+	ws, _, err := websocket.NewClient(c, uri, h, 1024, 1024)
 	if err != nil {
 		t.Fatalf("Could not connect %s", err)
 	}
+	ws.WriteMessage(websocket.TextMessage, []byte("hello 1!"))
+	time.Sleep(time.Second * 2)
+	ws.WriteMessage(websocket.TextMessage, []byte("hello 2!"))
+	time.Sleep(time.Second * 2)
+	ws.WriteMessage(websocket.TextMessage, []byte("hello 3!"))
+	ws.WriteMessage(websocket.CloseMessage, []byte{})
 }
