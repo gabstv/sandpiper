@@ -22,6 +22,7 @@ type Route struct {
 	Domain      string
 	Server      RouteServer //TODO: maybe support load balancing in the future
 	Certificate util.Certificate
+	WsCFG       util.WsConfig
 	rp          *util.ReverseProxy
 }
 
@@ -43,7 +44,7 @@ func (rs *RouteServer) URL() *url.URL {
 
 func (rt *Route) ReverseProxy(w http.ResponseWriter, r *http.Request) {
 	if rt.rp == nil {
-		rt.rp = util.NewSingleHostReverseProxy(rt.Server.URL())
+		rt.rp = util.NewSingleHostReverseProxy(rt.Server.URL(), rt.WsCFG)
 		if rt.Server.OutConnType == HTTPS_SKIP_VERIFY {
 			rt.rp.Transport = &http.Transport{
 				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},

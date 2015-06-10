@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 	//"net/http/httputil"
+	"github.com/gorilla/websocket"
 	"io"
 	"net"
 	"net/url"
@@ -37,6 +38,78 @@ type ReverseProxy struct {
 	// If nil, logging goes to os.Stderr via the log package's
 	// standard logger.
 	ErrorLog *log.Logger
+
+	// Configure Websocket
+	WsCFG WsConfig
+}
+
+type WsConfig struct {
+	ReadBufferSize  int
+	WriteBufferSize int
+}
+
+type wsbridge struct {
+	proxy2endpoint *websocket.Conn
+	client2proxy   *websocket.Conn
+}
+
+var readDeadline = time.Second * 60
+
+func (b *wsbridge) EndpointLoopRead() {
+	defer func() {
+		//ticker.Stop()
+		b.proxy2endpoint.Close()
+		b.client2proxy.Close()
+	}()
+	b.proxy2endpoint.SetReadLimit(1024) //TODO: configurable
+	b.proxy2endpoint.SetReadDeadline(time.Now().Add(readDeadline))
+	b.proxy2endpoint.SetPongHandler(func(string) error {
+		b.proxy2endpoint.SetReadDeadline(time.Now().Add(readDeadline))
+		//TODO: ping the endpoint
+		return nil
+	})
+	for {
+		mtype, rdr, err := b.proxy2endpoint.NextReader()
+		if err != nil {
+			return
+		}
+		wc, err := b.client2proxy.NextWriter(mtype)
+		if err != nil {
+			return
+		}
+		io.Copy(wc, rdr)
+		wc.Close()
+		//TODO: react on close
+	}
+}
+
+func (b *wsbridge) ClientLoopRead() {
+	//ticker := time.NewTicker(time.Second * 50)
+	defer func() {
+		//ticker.Stop()
+		b.proxy2endpoint.Close()
+		b.client2proxy.Close()
+	}()
+	b.client2proxy.SetReadLimit(1024) //TODO: configurable
+	b.client2proxy.SetReadDeadline(time.Now().Add(readDeadline))
+	b.client2proxy.SetPongHandler(func(string) error {
+		b.client2proxy.SetReadDeadline(time.Now().Add(readDeadline))
+		//TODO: ping the endpoint
+		return nil
+	})
+	for {
+		mtype, rdr, err := b.client2proxy.NextReader()
+		if err != nil {
+			return
+		}
+		wc, err := b.proxy2endpoint.NextWriter(mtype)
+		if err != nil {
+			return
+		}
+		io.Copy(wc, rdr)
+		wc.Close()
+		//TODO: react on close
+	}
 }
 
 func copyHeader(dst, src http.Header) {
@@ -50,21 +123,21 @@ func copyHeader(dst, src http.Header) {
 // Hop-by-hop headers. These are removed when sent to the backend.
 // http://www.w3.org/Protocols/rfc2616/rfc2616-sec13.html
 var hopHeaders = []string{
-	//"Connection", // they-re being removed afterwards
+	"Connection",
 	"Keep-Alive",
 	"Proxy-Authenticate",
 	"Proxy-Authorization",
 	"Te", // canonicalized version of "TE"
 	"Trailers",
 	"Transfer-Encoding",
-	//"Upgrade", // they-re being removed afterwards
+	"Upgrade",
 }
 
 // NewSingleHostReverseProxy returns a new ReverseProxy that rewrites
 // URLs to the scheme, host, and base path provided in target. If the
 // target's path is "/base" and the incoming request was for "/dir",
 // the target request will be for /base/dir.
-func NewSingleHostReverseProxy(target *url.URL) *ReverseProxy {
+func NewSingleHostReverseProxy(target *url.URL, wsconfig WsConfig) *ReverseProxy {
 	targetQuery := target.RawQuery
 	director := func(req *http.Request) {
 		req.URL.Scheme = target.Scheme
@@ -76,7 +149,7 @@ func NewSingleHostReverseProxy(target *url.URL) *ReverseProxy {
 			req.URL.RawQuery = targetQuery + "&" + req.URL.RawQuery
 		}
 	}
-	return &ReverseProxy{Director: director}
+	return &ReverseProxy{Director: director, WsCFG: wsconfig}
 }
 
 func (p *ReverseProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
@@ -94,6 +167,19 @@ func (p *ReverseProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	outreq.ProtoMinor = 1
 	outreq.Close = false
 
+	// support for Websockets
+	useWebsockets := false
+	if v0 := req.Header.Get("Connection"); v0 == "Upgrade" || v0 == "upgrade" {
+		if v1 := req.Header.Get("Upgrade"); v1 == "websocket" || v1 == "Websocket" {
+			if req.Method != "GET" {
+				// cut the cord earlier to avoid useless cpu use
+				http.Error(rw, "method not allowed", http.StatusMethodNotAllowed)
+				return
+			}
+			useWebsockets = true
+		}
+	}
+
 	// Remove hop-by-hop headers to the backend.  Especially
 	// important is "Connection" because we want a persistent
 	// connection, regardless of what the client sent to us.  This
@@ -110,18 +196,6 @@ func (p *ReverseProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 			outreq.Header.Del(h)
 		}
 	}
-	ug := false
-	ws := false
-	if outreq.Header.Get("Connection") != "Upgrade" {
-		outreq.Header.Del("Connection")
-	} else {
-		ug = true
-	}
-	if outreq.Header.Get("Upgrade") != "websocket" {
-		outreq.Header.Del("Upgrade")
-	} else {
-		ws = true
-	}
 
 	if clientIP, _, err := net.SplitHostPort(req.RemoteAddr); err == nil {
 		// If we aren't the first proxy retain prior
@@ -131,6 +205,40 @@ func (p *ReverseProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 			clientIP = strings.Join(prior, ", ") + ", " + clientIP
 		}
 		outreq.Header.Set("X-Forwarded-For", clientIP)
+	}
+
+	if useWebsockets {
+		// connect to the proxied server and asks for websockets!
+		c, err := net.Dial("tcp", outreq.URL.Host)
+		if err != nil {
+			http.Error(rw, "Internal Server Error - "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		proxy2endserver, _, err := websocket.NewClient(c, outreq.URL, outreq.Header, p.WsCFG.ReadBufferSize, p.WsCFG.WriteBufferSize)
+		if err != nil {
+			http.Error(rw, "Internal Server Error - "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		upgrader := websocket.Upgrader{
+			ReadBufferSize:  p.WsCFG.ReadBufferSize,
+			WriteBufferSize: p.WsCFG.WriteBufferSize,
+		}
+		req.Header.Set("Connection", "Upgrade")
+		req.Header.Set("Upgrade", "websocket")
+		client2proxy, err := upgrader.Upgrade(rw, req, nil)
+		if err != nil {
+			http.Error(rw, "Internal Server Error - "+err.Error(), http.StatusInternalServerError)
+		}
+		//
+		wsb := &wsbridge{
+			proxy2endpoint: proxy2endserver,
+			client2proxy:   client2proxy,
+		}
+		go wsb.ClientLoopRead()
+		wsb.EndpointLoopRead()
+		//
+		return
 	}
 
 	res, err := transport.RoundTrip(outreq)
@@ -143,12 +251,6 @@ func (p *ReverseProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 
 	for _, h := range hopHeaders {
 		res.Header.Del(h)
-	}
-	if !ug {
-		res.Header.Del("Connection")
-	}
-	if !ws {
-		res.Header.Del("Upgrade")
 	}
 
 	copyHeader(rw.Header(), res.Header)
