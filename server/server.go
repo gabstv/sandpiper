@@ -6,6 +6,7 @@ import (
 	"github.com/gabstv/sandpiper/util"
 	"net/http"
 	"runtime"
+	"time"
 )
 
 type Server struct {
@@ -18,16 +19,25 @@ func Default() *Server {
 	s := &Server{}
 	s.trieDomains = pathtree.NewTrie(".")
 	s.domains = make(map[string]*route.Route, 0)
-	s.Cfg.WebsocketsReadBufferSize = 2048
-	s.Cfg.WebsocketsWriteBufferSize = 2048
 	return s
 }
 
 func (s *Server) Add(r route.Route) error {
 	rr := &route.Route{}
 	*rr = r
-	rr.WsCFG.ReadBufferSize = s.Cfg.WebsocketsReadBufferSize
-	rr.WsCFG.WriteBufferSize = s.Cfg.WebsocketsWriteBufferSize
+	if rr.WsCFG.ReadBufferSize == 0 {
+		rr.WsCFG.ReadBufferSize = 2048
+	}
+	if rr.WsCFG.WriteBufferSize == 0 {
+		rr.WsCFG.WriteBufferSize = 2048
+	}
+	if rr.WsCFG.ReadDeadlineSeconds == 0 {
+		rr.WsCFG.ReadDeadlineSeconds = time.Second * 60
+	} else {
+		if rr.WsCFG.ReadDeadlineSeconds < time.Millisecond {
+			rr.WsCFG.ReadDeadlineSeconds = time.Duration(rr.WsCFG.ReadDeadlineSeconds) * time.Second
+		}
+	}
 	err := s.trieDomains.Add(r.Domain, rr)
 	if err != nil {
 		return err
