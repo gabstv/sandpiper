@@ -53,9 +53,8 @@ type WsConfig struct {
 type wsbridge struct {
 	proxy2endpoint *websocket.Conn
 	client2proxy   *websocket.Conn
+	rp             *ReverseProxy
 }
-
-var readDeadline = time.Second * 60
 
 func (b *wsbridge) EndpointLoopRead() {
 	defer func() {
@@ -64,9 +63,9 @@ func (b *wsbridge) EndpointLoopRead() {
 		b.client2proxy.Close()
 	}()
 	b.proxy2endpoint.SetReadLimit(1024) //TODO: configurable
-	b.proxy2endpoint.SetReadDeadline(time.Now().Add(readDeadline))
+	b.proxy2endpoint.SetReadDeadline(time.Now().Add(b.rp.WsCFG.ReadDeadlineSeconds))
 	b.proxy2endpoint.SetPongHandler(func(string) error {
-		b.proxy2endpoint.SetReadDeadline(time.Now().Add(readDeadline))
+		b.proxy2endpoint.SetReadDeadline(time.Now().Add(b.rp.WsCFG.ReadDeadlineSeconds))
 		//TODO: ping the endpoint
 		return nil
 	})
@@ -93,9 +92,9 @@ func (b *wsbridge) ClientLoopRead() {
 		b.client2proxy.Close()
 	}()
 	b.client2proxy.SetReadLimit(1024) //TODO: configurable
-	b.client2proxy.SetReadDeadline(time.Now().Add(readDeadline))
+	b.client2proxy.SetReadDeadline(time.Now().Add(b.rp.WsCFG.ReadDeadlineSeconds))
 	b.client2proxy.SetPongHandler(func(string) error {
-		b.client2proxy.SetReadDeadline(time.Now().Add(readDeadline))
+		b.client2proxy.SetReadDeadline(time.Now().Add(b.rp.WsCFG.ReadDeadlineSeconds))
 		//TODO: ping the endpoint
 		return nil
 	})
@@ -236,6 +235,7 @@ func (p *ReverseProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		wsb := &wsbridge{
 			proxy2endpoint: proxy2endserver,
 			client2proxy:   client2proxy,
+			rp:             p,
 		}
 		go wsb.ClientLoopRead()
 		wsb.EndpointLoopRead()
