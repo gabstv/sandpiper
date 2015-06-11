@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/gabstv/sandpiper/route"
 	"github.com/gabstv/sandpiper/server"
+	"github.com/gabstv/sandpiper/util"
 	"github.com/mattn/go-colorable"
 	"github.com/mgutz/ansi"
 	"gopkg.in/yaml.v2"
@@ -54,6 +55,8 @@ func main() {
 	s.Cfg.NumCPU = cfg.NumCPU
 	for _, v := range cfg.Routes {
 		r := route.Route{}
+		// apply Websockets config
+		r.WsCFG = v.Websockets
 		if ct, ok := unpackConnType(v.OutgoingServerConnType); ok {
 			r.Server.OutConnType = ct
 		} else {
@@ -151,9 +154,10 @@ type Config struct {
 }
 
 type ConfigRoute struct {
-	Domain                 string `yaml:"domain"`
-	OutgoingServerConnType string `yaml:"out_conn_type"`
-	OutgoingServerAddress  string `yaml:"out_addr"`
-	TLSCertFile            string `yaml:"tls_cert_file"`
-	TLSKeyFile             string `yaml:"tls_key_file"`
+	Domain                 string        `yaml:"domain"`
+	OutgoingServerConnType string        `yaml:"out_conn_type"`
+	OutgoingServerAddress  string        `yaml:"out_addr"`
+	TLSCertFile            string        `yaml:"tls_cert_file"`
+	TLSKeyFile             string        `yaml:"tls_key_file"`
+	Websockets             util.WsConfig `yaml:"websockets"`
 }

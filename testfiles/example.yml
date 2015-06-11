@@ -9,6 +9,11 @@ routes:
     domain:        example.com
     out_conn_type: HTTP
     out_addr:      localhost:8011
+    websockets:
+      active: true
+      read_buffer_size:      2048
+      write_buffer_size:     2048
+      read_deadline_seconds: 60
   - 
     domain:        example.net
     out_conn_type: HTTPS_SKIP_VERIFY

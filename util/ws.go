@@ -44,8 +44,10 @@ type ReverseProxy struct {
 }
 
 type WsConfig struct {
-	ReadBufferSize  int
-	WriteBufferSize int
+	Enabled             bool          `yaml:"enabled"`
+	ReadBufferSize      int           `yaml:"read_buffer_size"`
+	WriteBufferSize     int           `yaml:"write_buffer_size"`
+	ReadDeadlineSeconds time.Duration `yaml:"read_deadline_seconds"`
 }
 
 type wsbridge struct {
