@@ -2,6 +2,7 @@ package server
 
 import (
 	"github.com/gabstv/sandpiper/route"
+	"github.com/gabstv/sandpiper/util"
 	"github.com/gorilla/websocket"
 	"net"
 	"net/http"
@@ -107,6 +108,7 @@ func TestWebsocket(t *testing.T) {
 			OutConnType: route.HTTP,
 			OutAddress:  "localhost:9099",
 		},
+		WsCFG: util.WsConfig{Enabled: true},
 	}
 	err := sv.Add(r0)
 	if err != nil {

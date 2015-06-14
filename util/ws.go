@@ -170,14 +170,16 @@ func (p *ReverseProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 
 	// support for Websockets
 	useWebsockets := false
-	if v0 := req.Header.Get("Connection"); v0 == "Upgrade" || v0 == "upgrade" {
-		if v1 := req.Header.Get("Upgrade"); v1 == "websocket" || v1 == "Websocket" {
-			if req.Method != "GET" {
-				// cut the cord earlier to avoid useless cpu use
-				http.Error(rw, "method not allowed", http.StatusMethodNotAllowed)
-				return
+	if p.WsCFG.Enabled {
+		if v0 := req.Header.Get("Connection"); v0 == "Upgrade" || v0 == "upgrade" {
+			if v1 := req.Header.Get("Upgrade"); v1 == "websocket" || v1 == "Websocket" {
+				if req.Method != "GET" {
+					// cut the cord earlier to avoid useless cpu use
+					http.Error(rw, "method not allowed", http.StatusMethodNotAllowed)
+					return
+				}
+				useWebsockets = true
 			}
-			useWebsockets = true
 		}
 	}
 
