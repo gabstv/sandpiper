@@ -6,6 +6,7 @@ import (
 	"github.com/gabstv/sandpiper/util"
 	"log"
 	"net/http"
+	"os"
 	"runtime"
 	"time"
 )
@@ -14,13 +15,19 @@ type Server struct {
 	Cfg         Config
 	trieDomains *pathtree.Trie
 	domains     map[string]*route.Route
+	Logger      *log.Logger
 }
 
 func Default() *Server {
 	s := &Server{}
 	s.trieDomains = pathtree.NewTrie(".")
 	s.domains = make(map[string]*route.Route, 0)
+	s.Logger = log.New(os.Stderr, "[sp server] ", log.LstdFlags)
 	return s
+}
+
+func (s *Server) DebugLog() {
+
 }
 
 func (s *Server) Add(r route.Route) error {
@@ -88,17 +95,19 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if ho := r.Header.Get("X-Sandpiper-Host"); ho != "" {
 			h = ho
 		}
-		print("H: " + h + "\n")
+		s.Logger.Println("Host: " + h)
 	}
 	res := s.trieDomains.Find(h)
 	if res == nil {
-		log.Println("DOMAIN NOT FOUND")
+		if s.Cfg.Debug {
+			s.Logger.Println("DOMAIN NOT FOUND")
+		}
 		http.Error(w, "domain not found "+h, http.StatusInternalServerError)
 		return
 	}
 	if res.EndRoute == nil {
 		if s.Cfg.Debug {
-			log.Println("ROUTE IS NULL")
+			s.Logger.Println("ROUTE IS NULL")
 		}
 		http.Error(w, "route is null", http.StatusInternalServerError)
 		return
