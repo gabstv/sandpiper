@@ -1,0 +1,18 @@
+debug: false
+# If this is set to 0, or absent, it will default to the
+# amount of CPUs available.
+num_cpu: 0
+listen_addr:     :8080
+routes:
+  - 
+    domain:        localhost
+    out_conn_type: HTTP
+    out_addr:      localhost:9122
+    websockets:
+      enabled:     false
+  - 
+    domain:        localhost:8080
+    out_conn_type: HTTP
+    out_addr:      localhost:9122
+    websockets:
+      enabled:     false

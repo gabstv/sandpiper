@@ -4,6 +4,7 @@ import (
 	"github.com/gabstv/sandpiper/pathtree"
 	"github.com/gabstv/sandpiper/route"
 	"github.com/gabstv/sandpiper/util"
+	"log"
 	"net/http"
 	"runtime"
 	"time"
@@ -63,9 +64,11 @@ func (s *Server) Run() error {
 			certs = append(certs, v.Certificate)
 		}
 	}
-	go func() {
-		errc <- util.ListenAndServeTLSSNI(sv, certs)
-	}()
+	if len(certs) > 0 {
+		go func() {
+			errc <- util.ListenAndServeTLSSNI(sv, certs)
+		}()
+	}
 	err := <-errc
 	return err
 }
@@ -89,10 +92,14 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	res := s.trieDomains.Find(h)
 	if res == nil {
-		http.Error(w, "domain not found", http.StatusInternalServerError)
+		log.Println("DOMAIN NOT FOUND")
+		http.Error(w, "domain not found "+h, http.StatusInternalServerError)
 		return
 	}
 	if res.EndRoute == nil {
+		if s.Cfg.Debug {
+			log.Println("ROUTE IS NULL")
+		}
 		http.Error(w, "route is null", http.StatusInternalServerError)
 		return
 	}
