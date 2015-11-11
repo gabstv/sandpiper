@@ -236,9 +236,11 @@ func (p *ReverseProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 			http.Error(rw, "Internal Server Error - "+err.Error(), http.StatusInternalServerError)
 			return
 		}
-		proxy2endserver, _, err := websocket.NewClient(c, outreq.URL, outreq.Header, p.WsCFG.ReadBufferSize, p.WsCFG.WriteBufferSize)
+		url2 := *outreq.URL
+		url2.Scheme = "ws"
+		proxy2endserver, _, err := websocket.NewClient(c, &url2, outreq.Header, p.WsCFG.ReadBufferSize, p.WsCFG.WriteBufferSize)
 		if err != nil {
-			dlogln("websocket newclient", err, outreq.URL)
+			dlogln("websocket newclient", err, url2)
 			http.Error(rw, "Internal Server Error - "+err.Error(), http.StatusInternalServerError)
 			return
 		}
