@@ -238,6 +238,7 @@ func (p *ReverseProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		}
 		url2 := *outreq.URL
 		url2.Scheme = "ws"
+		outreq.Header.Set("X-Forwarded-Proto", url2.Scheme+aa)
 
 		outreq.Header.Del("Sec-Websocket-Key")
 		outreq.Header.Del("Sec-Websocket-Version")
