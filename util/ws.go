@@ -240,6 +240,7 @@ func (p *ReverseProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		url2.Scheme = "ws"
 
 		outreq.Header.Del("Sec-Websocket-Key")
+		outreq.Header.Del("Sec-Websocket-Version")
 
 		proxy2endserver, _, err := websocket.NewClient(c, &url2, outreq.Header, p.WsCFG.ReadBufferSize, p.WsCFG.WriteBufferSize)
 		if err != nil {
