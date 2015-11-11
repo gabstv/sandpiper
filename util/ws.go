@@ -257,7 +257,7 @@ func (p *ReverseProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		}
 		//req.Header.Set("Connection", "Upgrade")
 		//req.Header.Set("Upgrade", "websocket")
-		client2proxy, err := upgrader.Upgrade(rw, req, nil)
+		client2proxy, err := upgrader.Upgrade(rw, req, req.Header)
 		if err != nil {
 			dlogln("upgrader error", err)
 			http.Error(rw, "Internal Server Error - "+err.Error(), http.StatusInternalServerError)
