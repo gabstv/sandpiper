@@ -255,8 +255,8 @@ func (p *ReverseProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 			ReadBufferSize:  p.WsCFG.ReadBufferSize,
 			WriteBufferSize: p.WsCFG.WriteBufferSize,
 		}
-		req.Header.Set("Connection", "Upgrade")
-		req.Header.Set("Upgrade", "websocket")
+		//req.Header.Set("Connection", "Upgrade")
+		//req.Header.Set("Upgrade", "websocket")
 		client2proxy, err := upgrader.Upgrade(rw, req, nil)
 		if err != nil {
 			dlogln("upgrader error", err)
