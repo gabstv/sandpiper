@@ -13,6 +13,14 @@ import (
 	"time"
 )
 
+var DEBUG = false
+
+func dlogln(stuff ...interface{}) {
+	if DEBUG {
+		log.Println(stuff...)
+	}
+}
+
 // ReverseProxy is an HTTP Handler that takes an incoming request and
 // sends it to another server, proxying the response back to the
 // client.
@@ -62,7 +70,7 @@ func (b *wsbridge) EndpointLoopRead() {
 		b.proxy2endpoint.Close()
 		b.client2proxy.Close()
 	}()
-	b.proxy2endpoint.SetReadLimit(1024) //TODO: configurable
+	b.proxy2endpoint.SetReadLimit(int64(b.rp.WsCFG.ReadBufferSize))
 	b.proxy2endpoint.SetReadDeadline(time.Now().Add(b.rp.WsCFG.ReadDeadlineSeconds))
 	b.proxy2endpoint.SetPongHandler(func(string) error {
 		b.proxy2endpoint.SetReadDeadline(time.Now().Add(b.rp.WsCFG.ReadDeadlineSeconds))
@@ -70,6 +78,8 @@ func (b *wsbridge) EndpointLoopRead() {
 		return nil
 	})
 	for {
+		b.proxy2endpoint.SetReadDeadline(time.Now().Add(b.rp.WsCFG.ReadDeadlineSeconds))
+		b.proxy2endpoint.SetWriteDeadline(time.Now().Add(b.rp.WsCFG.ReadDeadlineSeconds))
 		mtype, rdr, err := b.proxy2endpoint.NextReader()
 		if err != nil {
 			return
@@ -91,7 +101,7 @@ func (b *wsbridge) ClientLoopRead() {
 		b.proxy2endpoint.Close()
 		b.client2proxy.Close()
 	}()
-	b.client2proxy.SetReadLimit(1024) //TODO: configurable
+	b.client2proxy.SetReadLimit(int64(b.rp.WsCFG.ReadBufferSize))
 	b.client2proxy.SetReadDeadline(time.Now().Add(b.rp.WsCFG.ReadDeadlineSeconds))
 	b.client2proxy.SetPongHandler(func(string) error {
 		b.client2proxy.SetReadDeadline(time.Now().Add(b.rp.WsCFG.ReadDeadlineSeconds))
@@ -99,6 +109,8 @@ func (b *wsbridge) ClientLoopRead() {
 		return nil
 	})
 	for {
+		b.client2proxy.SetReadDeadline(time.Now().Add(b.rp.WsCFG.ReadDeadlineSeconds))
+		b.client2proxy.SetWriteDeadline(time.Now().Add(b.rp.WsCFG.ReadDeadlineSeconds))
 		mtype, rdr, err := b.client2proxy.NextReader()
 		if err != nil {
 			return
@@ -220,11 +232,13 @@ func (p *ReverseProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		// connect to the proxied server and asks for websockets!
 		c, err := net.Dial("tcp", outreq.URL.Host)
 		if err != nil {
+			dlogln("net dial tcp error", err)
 			http.Error(rw, "Internal Server Error - "+err.Error(), http.StatusInternalServerError)
 			return
 		}
 		proxy2endserver, _, err := websocket.NewClient(c, outreq.URL, outreq.Header, p.WsCFG.ReadBufferSize, p.WsCFG.WriteBufferSize)
 		if err != nil {
+			dlogln("websocket newclient", err)
 			http.Error(rw, "Internal Server Error - "+err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -237,6 +251,7 @@ func (p *ReverseProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		req.Header.Set("Upgrade", "websocket")
 		client2proxy, err := upgrader.Upgrade(rw, req, nil)
 		if err != nil {
+			dlogln("upgrader error", err)
 			http.Error(rw, "Internal Server Error - "+err.Error(), http.StatusInternalServerError)
 		}
 		//

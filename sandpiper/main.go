@@ -50,6 +50,9 @@ func main() {
 	}
 	// unpack Config
 	s.Cfg.Debug = cfg.Debug
+	if s.Cfg.Debug {
+		util.DEBUG = true
+	}
 	s.Cfg.ListenAddr = cfg.ListenAddr
 	s.Cfg.ListenAddrTLS = cfg.ListenAddrTLS
 	s.Cfg.NumCPU = cfg.NumCPU
