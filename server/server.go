@@ -103,7 +103,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			if s.Cfg.Debug {
 				s.Logger.Println("FALLBACK DOMAIN", s.Cfg.FallbackDomain)
 			}
-			res = s.trieDomains.Find(s.Cfg.FallbackDomain)
+			res = s.domains[s.Cfg.FallbackDomain]
 			if res == nil {
 				if s.Cfg.Debug {
 					s.Logger.Println("DOMAIN NOT FOUND")
