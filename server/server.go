@@ -99,11 +99,25 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	res := s.trieDomains.Find(h)
 	if res == nil {
-		if s.Cfg.Debug {
-			s.Logger.Println("DOMAIN NOT FOUND")
+		if len(s.Cfg.FallbackDomain) > 0 {
+			if s.Cfg.Debug {
+				s.Logger.Println("FALLBACK DOMAIN", s.Cfg.FallbackDomain)
+			}
+			res = s.trieDomains.Find(s.Cfg.FallbackDomain)
+			if res == nil {
+				if s.Cfg.Debug {
+					s.Logger.Println("DOMAIN NOT FOUND")
+				}
+				http.Error(w, "domain not found "+h, http.StatusInternalServerError)
+				return
+			}
+		} else {
+			if s.Cfg.Debug {
+				s.Logger.Println("DOMAIN NOT FOUND")
+			}
+			http.Error(w, "domain not found "+h, http.StatusInternalServerError)
+			return
 		}
-		http.Error(w, "domain not found "+h, http.StatusInternalServerError)
-		return
 	}
 	if res.EndRoute == nil {
 		if s.Cfg.Debug {

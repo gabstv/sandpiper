@@ -56,6 +56,7 @@ func main() {
 	s.Cfg.ListenAddr = cfg.ListenAddr
 	s.Cfg.ListenAddrTLS = cfg.ListenAddrTLS
 	s.Cfg.NumCPU = cfg.NumCPU
+	s.Cfg.FallbackDomain = cfg.FallbackDomain
 	for _, v := range cfg.Routes {
 		r := route.Route{}
 		// apply Websockets config
@@ -149,11 +150,12 @@ func unpackConnType(input string) (route.ConnType, bool) {
 }
 
 type Config struct {
-	Debug         bool          `yaml:"debug"`
-	NumCPU        int           `yaml:"num_cpu"`
-	ListenAddr    string        `yaml:"listen_addr"`
-	ListenAddrTLS string        `yaml:"listen_addr_tls"`
-	Routes        []ConfigRoute `yaml:"routes"`
+	Debug          bool          `yaml:"debug"`
+	NumCPU         int           `yaml:"num_cpu"`
+	ListenAddr     string        `yaml:"listen_addr"`
+	ListenAddrTLS  string        `yaml:"listen_addr_tls"`
+	Routes         []ConfigRoute `yaml:"routes"`
+	FallbackDomain string        `yaml:"fallback_domain"`
 }
 
 type ConfigRoute struct {
