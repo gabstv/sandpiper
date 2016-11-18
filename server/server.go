@@ -81,11 +81,11 @@ func (s *Server) Run() error {
 			certs = append(certs, v.Certificate)
 		}
 	}
-	if len(certs) > 0 {
-		go func() {
-			errc <- util.ListenAndServeTLSSNI(sv, certs)
-		}()
-	}
+	//if len(certs) > 0 {
+	go func() {
+		errc <- util.ListenAndServeTLSSNI(sv, certs)
+	}()
+	//}
 	err := <-errc
 	return err
 }
