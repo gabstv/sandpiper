@@ -1,9 +1,11 @@
 package server
 
 import (
+	"crypto/tls"
 	"github.com/gabstv/sandpiper/pathtree"
 	"github.com/gabstv/sandpiper/route"
 	"github.com/gabstv/sandpiper/util"
+	"golang.org/x/crypto/acme/autocert"
 	"log"
 	"net/http"
 	"os"
@@ -61,8 +63,16 @@ func (s *Server) Run() error {
 		errc <- http.ListenAndServe(s.Cfg.ListenAddr, s)
 	}()
 
+	// Autocert
+	domains := []string{"testing1.nutripele.com.br"}
+	m := autocert.Manager{
+		Prompt:     autocert.AcceptTOS,
+		HostPolicy: autocert.HostWhitelist(domains...),
+	}
+
 	sv := &http.Server{
-		Addr: s.Cfg.ListenAddrTLS,
+		Addr:      s.Cfg.ListenAddrTLS,
+		TLSConfig: &tls.Config{GetCertificate: m.GetCertificate},
 	}
 	sv.Handler = s
 	certs := make([]util.Certificate, 0, len(s.domains))
