@@ -76,9 +76,29 @@ func (s *Server) Run() error {
 			Prompt:     autocert.AcceptTOS,
 			HostPolicy: autocert.HostWhitelist(autocdomains...),
 		}
+
+		certs := make(map[string]tls.Certificate)
+		for k, v := range s.domains {
+			if !v.Autocert && len(v.Certificate.KeyFile) > 0 && len(v.Certificate.CertFile) > 0 {
+				ncert, err := tls.LoadX509KeyPair(v.Certificate.CertFile, v.Certificate.KeyFile)
+				if err != nil {
+					s.Logger.Println("Error loading certificate for", k, err.Error())
+				} else {
+					certs[k] = ncert
+				}
+			}
+		}
+
+		haveLoveWillGetCert := func(clientHello *tls.ClientHelloInfo) (*tls.Certificate, error) {
+			s.Logger.Println("cert host is", clientHello.ServerName)
+			if dom, ok := certs[clientHello.ServerName]; ok {
+				return &dom, nil
+			}
+			return m.GetCertificate(clientHello)
+		}
 		sv = &http.Server{
 			Addr:      s.Cfg.ListenAddrTLS,
-			TLSConfig: &tls.Config{GetCertificate: m.GetCertificate},
+			TLSConfig: &tls.Config{GetCertificate: haveLoveWillGetCert},
 		}
 	} else {
 		sv = &http.Server{
