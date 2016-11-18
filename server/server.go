@@ -90,7 +90,7 @@ func (s *Server) Run() error {
 		}
 
 		haveLoveWillGetCert := func(clientHello *tls.ClientHelloInfo) (*tls.Certificate, error) {
-			s.Logger.Println("cert host is", clientHello.ServerName)
+			//s.Logger.Println("cert host is", clientHello.ServerName)
 			if dom, ok := certs[clientHello.ServerName]; ok {
 				return &dom, nil
 			}
