@@ -22,6 +22,7 @@ type Route struct {
 	Domain      string
 	Server      RouteServer //TODO: maybe support load balancing in the future
 	Certificate util.Certificate
+	Autocert    bool
 	WsCFG       util.WsConfig
 	rp          *util.ReverseProxy
 }

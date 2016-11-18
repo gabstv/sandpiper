@@ -23,7 +23,7 @@ var (
 func main() {
 	stdout = colorable.NewColorableStdout()
 	stderr = colorable.NewColorableStderr()
-	fmt.Fprintln(stdout, ansi.Color("\nSANDPIPER 1.0.0\n", "green"))
+	fmt.Fprintln(stdout, ansi.Color("\nSANDPIPER 1.1.0\n", "green"))
 	// init flags
 	flag.Parse()
 	// print help if needed
@@ -73,6 +73,7 @@ func main() {
 		r.Server.OutAddress = v.OutgoingServerAddress
 		r.Certificate.CertFile = v.TLSCertFile
 		r.Certificate.KeyFile = v.TLSKeyFile
+		r.Autocert = v.Autocert
 		err = s.Add(r)
 		if err != nil {
 			fmt.Fprintf(stderr, "\nERROR: Could not add route %v\n%v\n",
@@ -164,5 +165,6 @@ type ConfigRoute struct {
 	OutgoingServerAddress  string        `yaml:"out_addr"`
 	TLSCertFile            string        `yaml:"tls_cert_file"`
 	TLSKeyFile             string        `yaml:"tls_key_file"`
+	Autocert               bool          `yaml:"autocert"`
 	Websockets             util.WsConfig `yaml:"websockets"`
 }

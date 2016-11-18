@@ -64,16 +64,28 @@ func (s *Server) Run() error {
 	}()
 
 	// Autocert
-	domains := []string{"testing1.nutripele.com.br"}
-	m := autocert.Manager{
-		Prompt:     autocert.AcceptTOS,
-		HostPolicy: autocert.HostWhitelist(domains...),
+	autocdomains := make([]string, 0)
+	for _, v := range s.domains {
+		if v.Autocert {
+			autocdomains = append(autocdomains, v.Domain)
+		}
+	}
+	var sv *http.Server
+	if len(autocdomains) > 0 {
+		m := autocert.Manager{
+			Prompt:     autocert.AcceptTOS,
+			HostPolicy: autocert.HostWhitelist(autocdomains...),
+		}
+		sv = &http.Server{
+			Addr:      s.Cfg.ListenAddrTLS,
+			TLSConfig: &tls.Config{GetCertificate: m.GetCertificate},
+		}
+	} else {
+		sv = &http.Server{
+			Addr: s.Cfg.ListenAddrTLS,
+		}
 	}
 
-	sv := &http.Server{
-		Addr:      s.Cfg.ListenAddrTLS,
-		TLSConfig: &tls.Config{GetCertificate: m.GetCertificate},
-	}
 	sv.Handler = s
 	certs := make([]util.Certificate, 0, len(s.domains))
 	for _, v := range s.domains {
@@ -81,11 +93,11 @@ func (s *Server) Run() error {
 			certs = append(certs, v.Certificate)
 		}
 	}
-	//if len(certs) > 0 {
-	go func() {
-		errc <- util.ListenAndServeTLSSNI(sv, certs)
-	}()
-	//}
+	if len(certs) > 0 || len(autocdomains) > 0 {
+		go func() {
+			errc <- util.ListenAndServeTLSSNI(sv, certs)
+		}()
+	}
 	err := <-errc
 	return err
 }

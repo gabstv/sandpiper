@@ -50,4 +50,10 @@ routes:
     out_addr:      localhost:8012
     tls_cert_file: example.net.cert.pem
     tls_key_file:  example.net.key.pem
+  - 
+    domain:        auto.ssl.cert.by.lestencrypt.example.org
+    out_conn_type: HTTP
+    out_addr:      localhost:8013
+    autocert:      true
+    # use autocert to generate a domain validated certificate ON THE FLY (Evan?)
 ```
