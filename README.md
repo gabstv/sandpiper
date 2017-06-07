@@ -34,6 +34,7 @@ debug: true
 num_cpu: 0
 listen_addr:     :8080
 listen_addr_tls: :8443
+graceful: true # graceful shutdown (on interrupt)
 routes:
   - 
     domain:        example.com
