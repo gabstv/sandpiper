@@ -19,6 +19,7 @@ type Server struct {
 	trieDomains *pathtree.Trie
 	domains     map[string]*route.Route
 	Logger      *log.Logger
+	closeChan   chan os.Signal
 }
 
 func Default() *Server {
@@ -114,9 +115,9 @@ func (s *Server) Run() error {
 			certs = append(certs, v.Certificate)
 		}
 	}
+	var wrapper *util.ServerWrapper
 	if len(certs) > 0 || len(autocdomains) > 0 {
 		go func() {
-			var wrapper *util.ServerWrapper
 			if s.Cfg.Graceful {
 				wrapper = util.NewGracefulServer(manners.NewWithServer(sv))
 			} else {
@@ -125,8 +126,23 @@ func (s *Server) Run() error {
 			errc <- util.ListenAndServeTLSSNI(wrapper, certs)
 		}()
 	}
+	//
+	go func() {
+		s.closeChan = make(chan os.Signal, 1)
+		//signal.Notify(s.closeChan, os.Interrupt, os.Kill)
+		<-s.closeChan
+		if wrapper != nil {
+			wrapper.Close()
+		}
+		errc <- nil
+	}()
+	//
 	err := <-errc
 	return err
+}
+
+func (s *Server) Close() {
+	s.closeChan <- os.Interrupt
 }
 
 func (s *Server) Init() {

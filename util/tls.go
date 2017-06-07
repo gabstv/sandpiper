@@ -2,6 +2,7 @@ package util
 
 import (
 	"crypto/tls"
+	"log"
 	"net"
 	"net/http"
 	"time"
@@ -77,6 +78,16 @@ func (w *ServerWrapper) IsGraceful() bool {
 	if w.vanilla != nil {
 		return false
 	}
+	return true
+}
+
+func (w *ServerWrapper) Close() bool {
+	if w.graceful != nil {
+		log.Println("Shutting down gracefully...")
+		return w.graceful.Close()
+	}
+	log.Println("Shutting down...")
+	w.vanilla.Close()
 	return true
 }
 
