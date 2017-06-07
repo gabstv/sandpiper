@@ -6,4 +6,5 @@ type Config struct {
 	ListenAddr     string
 	ListenAddrTLS  string
 	FallbackDomain string
+	Graceful       bool
 }

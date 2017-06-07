@@ -57,6 +57,7 @@ func main() {
 	s.Cfg.ListenAddrTLS = cfg.ListenAddrTLS
 	s.Cfg.NumCPU = cfg.NumCPU
 	s.Cfg.FallbackDomain = cfg.FallbackDomain
+	s.Cfg.Graceful = cfg.Graceful
 	for _, v := range cfg.Routes {
 		r := route.Route{}
 		// apply Websockets config
@@ -157,6 +158,7 @@ type Config struct {
 	ListenAddrTLS  string        `yaml:"listen_addr_tls"`
 	Routes         []ConfigRoute `yaml:"routes"`
 	FallbackDomain string        `yaml:"fallback_domain"`
+	Graceful       bool          `yaml:"graceful"`
 }
 
 type ConfigRoute struct {

@@ -2,6 +2,7 @@ package server
 
 import (
 	"crypto/tls"
+	"github.com/gabstv/manners"
 	"github.com/gabstv/sandpiper/pathtree"
 	"github.com/gabstv/sandpiper/route"
 	"github.com/gabstv/sandpiper/util"
@@ -115,7 +116,13 @@ func (s *Server) Run() error {
 	}
 	if len(certs) > 0 || len(autocdomains) > 0 {
 		go func() {
-			errc <- util.ListenAndServeTLSSNI(sv, certs)
+			var wrapper *util.ServerWrapper
+			if s.Cfg.Graceful {
+				wrapper = util.NewGracefulServer(manners.NewWithServer(sv))
+			} else {
+				wrapper = util.NewVanillaServer(sv)
+			}
+			errc <- util.ListenAndServeTLSSNI(wrapper, certs)
 		}()
 	}
 	err := <-errc

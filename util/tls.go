@@ -5,6 +5,8 @@ import (
 	"net"
 	"net/http"
 	"time"
+
+	"github.com/gabstv/manners"
 )
 
 // tcpKeepAliveListener sets TCP keep-alive timeouts on accepted
@@ -30,14 +32,64 @@ type Certificate struct {
 	KeyFile  string
 }
 
-func ListenAndServeTLSSNI(server *http.Server, certs []Certificate) error {
-	addr := server.Addr
+type ServerWrapper struct {
+	vanilla  *http.Server
+	graceful *manners.GracefulServer
+}
+
+func newServerWrapper(vanilla *http.Server, graceful *manners.GracefulServer) *ServerWrapper {
+	return &ServerWrapper{
+		vanilla:  vanilla,
+		graceful: graceful,
+	}
+}
+
+func NewVanillaServer(vanilla *http.Server) *ServerWrapper {
+	return newServerWrapper(vanilla, nil)
+}
+
+func NewGracefulServer(graceful *manners.GracefulServer) *ServerWrapper {
+	return newServerWrapper(nil, graceful)
+}
+
+func (w *ServerWrapper) GetAddr() string {
+	if w.vanilla != nil {
+		return w.vanilla.Addr
+	}
+	return w.graceful.Addr
+}
+
+func (w *ServerWrapper) GetTLSConfig() *tls.Config {
+	if w.vanilla != nil {
+		return w.vanilla.TLSConfig
+	}
+	return w.graceful.TLSConfig
+}
+
+func (w *ServerWrapper) Serve(l net.Listener) error {
+	if w.vanilla != nil {
+		return w.vanilla.Serve(l)
+	}
+	return w.graceful.Serve(l)
+}
+
+func (w *ServerWrapper) IsGraceful() bool {
+	if w.vanilla != nil {
+		return false
+	}
+	return true
+}
+
+func ListenAndServeTLSSNI(server *ServerWrapper, certs []Certificate) error {
+	graceful := server.IsGraceful()
+	addr := server.GetAddr()
 	if addr == "" {
 		addr = ":https"
 	}
 	config := &tls.Config{}
-	if server.TLSConfig != nil {
-		*config = *server.TLSConfig
+	if server.GetTLSConfig() != nil {
+		cfcf := server.GetTLSConfig()
+		*config = *cfcf
 	}
 	if config.NextProtos == nil {
 		config.NextProtos = []string{"http/1.1"}
@@ -59,5 +111,10 @@ func ListenAndServeTLSSNI(server *http.Server, certs []Certificate) error {
 		return err
 	}
 	tlsl := tls.NewListener(tcpKeepAliveListener{conn.(*net.TCPListener)}, config)
+
+	if graceful {
+		graceful_l := manners.NewTLSListener(tlsl, config)
+		return server.Serve(graceful_l)
+	}
 	return server.Serve(tlsl)
 }

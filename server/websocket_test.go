@@ -115,10 +115,10 @@ func TestWebsocket(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	uri, _ := url.Parse("http://localhost:9100")
+	uri, _ := url.Parse("ws://localhost:9100")
 	h := http.Header{}
 	h.Set("X-Sandpiper-Host", "example.com")
-	h.Set("Upgrade", "websocket")
+	//h.Set("Upgrade", "websocket")
 
 	go func() {
 		err := sv.Run()
