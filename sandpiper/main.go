@@ -97,7 +97,7 @@ func main() {
 	// Close if received signal
 	go func() {
 		sigchan := make(chan os.Signal, 1)
-		signal.Notify(signal, os.Interrupt, os.Kill)
+		signal.Notify(sigchan, os.Interrupt, os.Kill)
 		<-sigchan
 		s.Close()
 	}()
