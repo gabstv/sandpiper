@@ -59,6 +59,7 @@ func main() {
 	s.Cfg.NumCPU = cfg.NumCPU
 	s.Cfg.FallbackDomain = cfg.FallbackDomain
 	s.Cfg.Graceful = cfg.Graceful
+	s.Cfg.CachePath = cfg.CachePath
 	for _, v := range cfg.Routes {
 		r := route.Route{}
 		// apply Websockets config
@@ -168,6 +169,7 @@ type Config struct {
 	Routes         []ConfigRoute `yaml:"routes"`
 	FallbackDomain string        `yaml:"fallback_domain"`
 	Graceful       bool          `yaml:"graceful"`
+	CachePath      string        `yaml:"cache_path"`
 }
 
 type ConfigRoute struct {

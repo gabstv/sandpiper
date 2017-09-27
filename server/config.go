@@ -7,4 +7,5 @@ type Config struct {
 	ListenAddrTLS  string
 	FallbackDomain string
 	Graceful       bool
+	CachePath      string
 }

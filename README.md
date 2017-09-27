@@ -34,7 +34,8 @@ debug: true
 num_cpu: 0
 listen_addr:     :8080
 listen_addr_tls: :8443
-graceful: true # graceful shutdown (on interrupt)
+graceful:        true           # graceful shutdown (on interrupt)
+cache_path:      /tmp/sandpiper # a place to store autocerts
 routes:
   - 
     domain:        example.com
@@ -56,5 +57,5 @@ routes:
     out_conn_type: HTTP
     out_addr:      localhost:8013
     autocert:      true
-    # use autocert to generate a domain validated certificate ON THE FLY (Evan?)
+    # use autocert to generate a domain validated certificate automatically via LetsEncrypt
 ```

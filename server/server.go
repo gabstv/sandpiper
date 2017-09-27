@@ -74,9 +74,15 @@ func (s *Server) Run() error {
 	}
 	var sv *http.Server
 	if len(autocdomains) > 0 {
+		cpath := "/tmp/sandpiper"
+		if s.Cfg.CachePath != "" {
+			cpath = s.Cfg.CachePath
+		}
+		dcache := autocert.DirCache(cpath)
 		m := autocert.Manager{
 			Prompt:     autocert.AcceptTOS,
 			HostPolicy: autocert.HostWhitelist(autocdomains...),
+			Cache:      &dcache,
 		}
 
 		certs := make(map[string]tls.Certificate)
