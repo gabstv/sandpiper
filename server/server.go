@@ -61,9 +61,6 @@ func (s *Server) Add(r route.Route) error {
 func (s *Server) Run() error {
 	s.Init()
 	errc := make(chan error, 3)
-	go func() {
-		errc <- http.ListenAndServe(s.Cfg.ListenAddr, s)
-	}()
 
 	// Autocert
 	autocdomains := make([]string, 0)
@@ -116,9 +113,15 @@ func (s *Server) Run() error {
 	}
 
 	sv.Handler = s
-	if m != nil {
-		sv.Handler = m.HTTPHandler(s)
-	}
+
+	go func() {
+		if m == nil {
+			errc <- http.ListenAndServe(s.Cfg.ListenAddr, s)
+		} else {
+			errc <- http.ListenAndServe(s.Cfg.ListenAddr, m.HTTPHandler(s))
+		}
+	}()
+
 	certs := make([]util.Certificate, 0, len(s.domains))
 	for _, v := range s.domains {
 		if v.Certificate.CertFile != "" {
