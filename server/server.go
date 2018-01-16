@@ -118,7 +118,8 @@ func (s *Server) Run() error {
 		if m == nil {
 			errc <- http.ListenAndServe(s.Cfg.ListenAddr, s)
 		} else {
-			errc <- http.ListenAndServe(s.Cfg.ListenAddr, m.HTTPHandler(s))
+			errc <- http.ListenAndServe(s.Cfg.ListenAddr, m.HTTPHandler(nil))
+			s.Logger.Println("Listening accepting HTTP requests only to the SNI challenge")
 		}
 	}()
 
