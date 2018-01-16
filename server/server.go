@@ -73,13 +73,14 @@ func (s *Server) Run() error {
 		}
 	}
 	var sv *http.Server
+	var m *autocert.Manager
 	if len(autocdomains) > 0 {
 		cpath := "/tmp/sandpiper"
 		if s.Cfg.CachePath != "" {
 			cpath = s.Cfg.CachePath
 		}
 		dcache := autocert.DirCache(cpath)
-		m := autocert.Manager{
+		m = &autocert.Manager{
 			Prompt:     autocert.AcceptTOS,
 			HostPolicy: autocert.HostWhitelist(autocdomains...),
 			Cache:      &dcache,
@@ -115,6 +116,9 @@ func (s *Server) Run() error {
 	}
 
 	sv.Handler = s
+	if m != nil {
+		sv.Handler = m.HTTPHandler(s)
+	}
 	certs := make([]util.Certificate, 0, len(s.domains))
 	for _, v := range s.domains {
 		if v.Certificate.CertFile != "" {
