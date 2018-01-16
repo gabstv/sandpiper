@@ -116,10 +116,11 @@ func (s *Server) Run() error {
 
 	go func() {
 		if m == nil {
+			s.Logger.Println("Listening HTTP")
 			errc <- http.ListenAndServe(s.Cfg.ListenAddr, s)
 		} else {
-			errc <- http.ListenAndServe(s.Cfg.ListenAddr, m.HTTPHandler(nil))
 			s.Logger.Println("Listening accepting HTTP requests only to the SNI challenge")
+			errc <- http.ListenAndServe(s.Cfg.ListenAddr, m.HTTPHandler(nil))
 		}
 	}()
 
