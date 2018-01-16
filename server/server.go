@@ -120,7 +120,7 @@ func (s *Server) Run() error {
 			errc <- http.ListenAndServe(s.Cfg.ListenAddr, s)
 		} else {
 			s.Logger.Println("Listening accepting HTTP requests only to the SNI challenge")
-			errc <- http.ListenAndServe(s.Cfg.ListenAddr, m.HTTPHandler(nil))
+			errc <- http.ListenAndServe(s.Cfg.ListenAddr, m.HTTPHandler(s))
 		}
 	}()
 
