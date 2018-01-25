@@ -15,7 +15,16 @@ import (
 	"golang.org/x/crypto/acme/autocert"
 )
 
-type Server struct {
+// Server is the structure that controls, routes and certificates.
+type Server interface {
+	Add(r route.Route) error
+	Run() error
+	Close()
+	Init()
+	ServeHTTP(w http.ResponseWriter, r *http.Request)
+}
+
+type sServer struct {
 	Cfg         Config
 	trieDomains *pathtree.Trie
 	domains     map[string]*route.Route
@@ -23,19 +32,18 @@ type Server struct {
 	closeChan   chan os.Signal
 }
 
-func Default() *Server {
-	s := &Server{}
+func Default(cfg *Config) Server {
+	s := &sServer{}
+	if cfg != nil {
+		s.Cfg = *cfg
+	}
 	s.trieDomains = pathtree.NewTrie(".")
 	s.domains = make(map[string]*route.Route, 0)
 	s.Logger = log.New(os.Stderr, "[sp server] ", log.LstdFlags)
 	return s
 }
 
-func (s *Server) DebugLog() {
-
-}
-
-func (s *Server) Add(r route.Route) error {
+func (s *sServer) Add(r route.Route) error {
 	rr := &route.Route{}
 	*rr = r
 	if rr.WsCFG.ReadBufferSize == 0 {
@@ -59,7 +67,7 @@ func (s *Server) Add(r route.Route) error {
 	return nil
 }
 
-func (s *Server) Run() error {
+func (s *sServer) Run() error {
 	s.Init()
 	errc := make(chan error, 3)
 
@@ -96,8 +104,7 @@ func (s *Server) Run() error {
 			}
 		}
 
-		haveLoveWillGetCert := func(clientHello *tls.ClientHelloInfo) (*tls.Certificate, error) {
-			//s.Logger.Println("cert host is", clientHello.ServerName)
+		getcertfn := func(clientHello *tls.ClientHelloInfo) (*tls.Certificate, error) {
 			if dom, ok := certs[clientHello.ServerName]; ok {
 				return &dom, nil
 			}
@@ -105,7 +112,7 @@ func (s *Server) Run() error {
 		}
 		sv = &http.Server{
 			Addr:      s.Cfg.ListenAddrTLS,
-			TLSConfig: &tls.Config{GetCertificate: haveLoveWillGetCert},
+			TLSConfig: &tls.Config{GetCertificate: getcertfn},
 		}
 	} else {
 		sv = &http.Server{
@@ -120,7 +127,7 @@ func (s *Server) Run() error {
 			s.Logger.Println("Listening HTTP")
 			errc <- http.ListenAndServe(s.Cfg.ListenAddr, s)
 		} else {
-			s.Logger.Println("Listening accepting HTTP requests only to the SNI challenge")
+			s.Logger.Println("Listening accepting HTTP requests to the SNI challenge")
 			errc <- http.ListenAndServe(s.Cfg.ListenAddr, m.HTTPHandler(s))
 		}
 	}()
@@ -135,8 +142,10 @@ func (s *Server) Run() error {
 	if len(certs) > 0 || len(autocdomains) > 0 {
 		go func() {
 			if s.Cfg.Graceful {
+				s.Logger.Println("Listening HTTPS (Graceful)")
 				wrapper = util.NewGracefulServer(manners.NewWithServer(sv))
 			} else {
+				s.Logger.Println("Listening HTTPS (Vanilla)")
 				wrapper = util.NewVanillaServer(sv)
 			}
 			errc <- util.ListenAndServeTLSSNI(wrapper, certs)
@@ -145,7 +154,6 @@ func (s *Server) Run() error {
 	//
 	go func() {
 		s.closeChan = make(chan os.Signal, 1)
-		//signal.Notify(s.closeChan, os.Interrupt, os.Kill)
 		<-s.closeChan
 		if wrapper != nil {
 			wrapper.Close()
@@ -157,11 +165,11 @@ func (s *Server) Run() error {
 	return err
 }
 
-func (s *Server) Close() {
+func (s *sServer) Close() {
 	s.closeChan <- os.Interrupt
 }
 
-func (s *Server) Init() {
+func (s *sServer) Init() {
 	// first start setting the number of cpu cores to use
 	ncpu := runtime.NumCPU()
 	if s.Cfg.NumCPU > 0 && s.Cfg.NumCPU < ncpu {
@@ -170,7 +178,7 @@ func (s *Server) Init() {
 	runtime.GOMAXPROCS(ncpu)
 }
 
-func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (s *sServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h := r.Host
 	if s.Cfg.Debug {
 		if ho := r.Header.Get("X-Sandpiper-Host"); ho != "" {

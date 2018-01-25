@@ -98,10 +98,11 @@ func TestWebsocket(t *testing.T) {
 		}
 	}()
 	//
-	sv := Default()
-	sv.Cfg.Debug = true
-	sv.Cfg.ListenAddr = ":9100"
-	sv.Cfg.ListenAddrTLS = ":9101"
+	sv := Default(&Config{
+		Debug:         true,
+		ListenAddr:    ":9100",
+		ListenAddrTLS: ":9101",
+	})
 	r0 := route.Route{
 		Domain: "example.com",
 		Server: route.RouteServer{

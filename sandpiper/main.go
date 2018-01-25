@@ -40,7 +40,6 @@ func main() {
 			ansi.Color(err.Error(), "red"))
 		os.Exit(1)
 	}
-	s := server.Default()
 
 	cfg := &Config{}
 	err = yaml.Unmarshal(bs, cfg)
@@ -50,17 +49,22 @@ func main() {
 			ansi.Color(err.Error(), "red"))
 		os.Exit(1)
 	}
+
 	// unpack Config
-	s.Cfg.Debug = cfg.Debug
-	if s.Cfg.Debug {
+	svCfg := &server.Config{}
+	svCfg.Debug = cfg.Debug
+	if svCfg.Debug {
 		util.DEBUG = true
 	}
-	s.Cfg.ListenAddr = cfg.ListenAddr
-	s.Cfg.ListenAddrTLS = cfg.ListenAddrTLS
-	s.Cfg.NumCPU = cfg.NumCPU
-	s.Cfg.FallbackDomain = cfg.FallbackDomain
-	s.Cfg.Graceful = cfg.Graceful
-	s.Cfg.CachePath = cfg.CachePath
+	svCfg.ListenAddr = cfg.ListenAddr
+	svCfg.ListenAddrTLS = cfg.ListenAddrTLS
+	svCfg.NumCPU = cfg.NumCPU
+	svCfg.FallbackDomain = cfg.FallbackDomain
+	svCfg.Graceful = cfg.Graceful
+	svCfg.CachePath = cfg.CachePath
+
+	s := server.Default(svCfg)
+
 	for _, v := range cfg.Routes {
 		r := route.Route{}
 		// apply Websockets config

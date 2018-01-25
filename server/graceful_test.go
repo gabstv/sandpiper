@@ -34,12 +34,12 @@ func (t *delayTestServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func TestShutdown(t *testing.T) {
 
-	site1Port, err := freeport.GetPort()
+	site1Port, err := freeport.TCP()
 	if err != nil {
 		t.Error(err)
 	}
 
-	mainPort, err := freeport.GetPort()
+	mainPort, err := freeport.TCP()
 	if err != nil {
 		t.Error(err)
 	}
@@ -48,11 +48,12 @@ func TestShutdown(t *testing.T) {
 		t.Errorf("ports should not be equal\n")
 	}
 
-	sv := Default()
-	sv.Cfg.Graceful = true
-	sv.Cfg.Debug = true
-	sv.Cfg.ListenAddr = fmt.Sprintf("localhost:%v", mainPort)
-	sv.Cfg.FallbackDomain = fmt.Sprintf("localhost:%v", site1Port)
+	sv := Default(&Config{
+		Graceful:       true,
+		Debug:          true,
+		ListenAddr:     fmt.Sprintf("localhost:%v", mainPort),
+		FallbackDomain: fmt.Sprintf("localhost:%v", site1Port),
+	})
 
 	rsite1 := route.Route{
 		Domain: "site1.com",

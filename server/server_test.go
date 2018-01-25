@@ -36,8 +36,9 @@ func TestServerBasic(t *testing.T) {
 		}
 	}()
 	//
-	sv := Default()
-	sv.Cfg.Debug = true
+	sv := Default(&Config{
+		Debug: true,
+	})
 	r0 := route.Route{
 		Domain: "example.com",
 		Server: route.RouteServer{
@@ -59,7 +60,6 @@ func TestServerBasic(t *testing.T) {
 
 	sv.ServeHTTP(w, r)
 	if w.Body.String() != "Hello!" {
-		t.Log(sv.trieDomains.RawRoutes)
 		t.Fatalf("(example.com) Body should be %v but it is %v", "Hello!", w.Body.String())
 	}
 
@@ -89,8 +89,11 @@ func TestServerSSL(t *testing.T) {
 		}
 	}()
 	//
-	sv := Default()
-	sv.Cfg.Debug = true
+	sv := Default(&Config{
+		Debug:         true,
+		ListenAddrTLS: ":9093",
+		ListenAddr:    ":9098",
+	})
 	r0 := route.Route{
 		Domain: "example.com",
 		Server: route.RouteServer{
@@ -102,8 +105,6 @@ func TestServerSSL(t *testing.T) {
 			KeyFile:  "../testfiles/example.com.key.pem",
 		},
 	}
-	sv.Cfg.ListenAddrTLS = ":9093"
-	sv.Cfg.ListenAddr = ":9098"
 	err := sv.Add(r0)
 	if err != nil {
 		t.Fatal(err)
@@ -112,7 +113,6 @@ func TestServerSSL(t *testing.T) {
 	go func() {
 		err := sv.Run()
 		if err != nil {
-			t.Log("NOES")
 			t.Fatal(err)
 		}
 	}()
