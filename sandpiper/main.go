@@ -3,16 +3,17 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io"
+	"io/ioutil"
+	"os"
+	"os/signal"
+
 	"github.com/gabstv/sandpiper/route"
 	"github.com/gabstv/sandpiper/server"
 	"github.com/gabstv/sandpiper/util"
 	"github.com/mattn/go-colorable"
 	"github.com/mgutz/ansi"
 	"gopkg.in/yaml.v2"
-	"io"
-	"io/ioutil"
-	"os"
-	"os/signal"
 )
 
 var (
@@ -77,6 +78,9 @@ func main() {
 		r.Certificate.CertFile = v.TLSCertFile
 		r.Certificate.KeyFile = v.TLSKeyFile
 		r.Autocert = v.Autocert
+		r.AuthMode = v.AuthMode
+		r.AuthKey = v.AuthKey
+		r.AuthValue = v.AuthValue
 		err = s.Add(r)
 		if err != nil {
 			fmt.Fprintf(stderr, "\nERROR: Could not add route %v\n%v\n",
@@ -180,4 +184,7 @@ type ConfigRoute struct {
 	TLSKeyFile             string        `yaml:"tls_key_file"`
 	Autocert               bool          `yaml:"autocert"`
 	Websockets             util.WsConfig `yaml:"websockets"`
+	AuthMode               string        `yaml:"auth_mode"`
+	AuthKey                string        `yaml:"auth_key"`
+	AuthValue              string        `yaml:"auth_value"`
 }

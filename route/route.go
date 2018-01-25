@@ -2,12 +2,12 @@ package route
 
 import (
 	"crypto/tls"
-	"github.com/gabstv/sandpiper/util"
 	"net"
 	"net/http"
-	//"net/http/httputil"
 	"net/url"
 	"time"
+
+	"github.com/gabstv/sandpiper/util"
 )
 
 type ConnType int
@@ -25,6 +25,9 @@ type Route struct {
 	Autocert    bool
 	WsCFG       util.WsConfig
 	rp          *util.ReverseProxy
+	AuthMode    string
+	AuthKey     string
+	AuthValue   string
 }
 
 type RouteServer struct {

@@ -2,16 +2,17 @@ package server
 
 import (
 	"crypto/tls"
-	"github.com/gabstv/manners"
-	"github.com/gabstv/sandpiper/pathtree"
-	"github.com/gabstv/sandpiper/route"
-	"github.com/gabstv/sandpiper/util"
-	"golang.org/x/crypto/acme/autocert"
 	"log"
 	"net/http"
 	"os"
 	"runtime"
 	"time"
+
+	"github.com/gabstv/manners"
+	"github.com/gabstv/sandpiper/pathtree"
+	"github.com/gabstv/sandpiper/route"
+	"github.com/gabstv/sandpiper/util"
+	"golang.org/x/crypto/acme/autocert"
 )
 
 type Server struct {
@@ -185,6 +186,15 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 			dom := s.domains[s.Cfg.FallbackDomain]
 			if dom != nil {
+				if dom.AuthMode != "" {
+					switch dom.AuthMode {
+					case "apikey":
+						if dom.AuthValue != r.Header.Get(dom.AuthKey) {
+							w.WriteHeader(http.StatusUnauthorized)
+							return
+						}
+					}
+				}
 				dom.ReverseProxy(w, r)
 				return
 			}
@@ -202,6 +212,15 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		http.Error(w, "route is null", http.StatusInternalServerError)
 		return
+	}
+	if res.EndRoute.AuthMode != "" {
+		switch res.EndRoute.AuthMode {
+		case "apikey":
+			if res.EndRoute.AuthValue != r.Header.Get(res.EndRoute.AuthKey) {
+				w.WriteHeader(http.StatusUnauthorized)
+				return
+			}
+		}
 	}
 	res.EndRoute.ReverseProxy(w, r)
 }

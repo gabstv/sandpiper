@@ -123,6 +123,9 @@ func ListenAndServeTLSSNI(server *ServerWrapper, certs []Certificate) error {
 	}
 	tlsl := tls.NewListener(tcpKeepAliveListener{conn.(*net.TCPListener)}, config)
 
+	//TODO: fix malformed http resp when getting TLS
+	// net/http: HTTP/1.x transport connection broken: malformed HTTP response "\x15\x03\x01\x00\x02\x02\x16"
+	// add this to the docs!
 	if graceful {
 		graceful_l := manners.NewTLSListener(tlsl, config)
 		return server.Serve(graceful_l)
