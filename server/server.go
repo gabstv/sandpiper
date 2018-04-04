@@ -8,6 +8,8 @@ import (
 	"runtime"
 	"time"
 
+	"golang.org/x/crypto/acme"
+
 	"github.com/gabstv/manners"
 	"github.com/gabstv/sandpiper/pathtree"
 	"github.com/gabstv/sandpiper/route"
@@ -32,6 +34,7 @@ type sServer struct {
 	closeChan   chan os.Signal
 }
 
+// Default starts a server with the default configuration options
 func Default(cfg *Config) Server {
 	s := &sServer{}
 	if cfg != nil {
@@ -90,6 +93,9 @@ func (s *sServer) Run() error {
 			Prompt:     autocert.AcceptTOS,
 			HostPolicy: autocert.HostWhitelist(autocdomains...),
 			Cache:      &dcache,
+		}
+		if s.Cfg.LetsEncryptURL != "" {
+			m.Client = &acme.Client{DirectoryURL: s.Cfg.LetsEncryptURL}
 		}
 
 		certs := make(map[string]tls.Certificate)
