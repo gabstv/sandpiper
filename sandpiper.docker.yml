@@ -1,0 +1,7 @@
+debug: true
+# If this is set to 0, or absent, it will default to the
+# amount of CPUs available.
+num_cpu: 0
+listen_addr:     :80
+listen_addr_tls: :443
+graceful: true # graceful shutdown (on interrupt)
