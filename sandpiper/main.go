@@ -58,6 +58,7 @@ func main() {
 	}
 	svCfg.ListenAddr = cfg.ListenAddr
 	svCfg.ListenAddrTLS = cfg.ListenAddrTLS
+	svCfg.DisableTLS = cfg.DisableTLS
 	svCfg.NumCPU = cfg.NumCPU
 	svCfg.FallbackDomain = cfg.FallbackDomain
 	svCfg.Graceful = cfg.Graceful
@@ -68,6 +69,12 @@ func main() {
 	svCfg.APIDomainAutocert = cfg.APIDomainAutocert
 
 	// ENV VARS
+	if vv := os.Getenv("LISTEN"); vv != "" {
+		svCfg.ListenAddr = vv
+	}
+	if vv := os.Getenv("LISTEN_TLS"); vv != "" {
+		svCfg.ListenAddrTLS = vv
+	}
 	if vv := os.Getenv("FALLBACK_DOMAIN"); vv != "" {
 		svCfg.FallbackDomain = vv
 	}
@@ -196,6 +203,7 @@ type Config struct {
 	NumCPU            int           `yaml:"num_cpu"`
 	ListenAddr        string        `yaml:"listen_addr"`
 	ListenAddrTLS     string        `yaml:"listen_addr_tls"`
+	DisableTLS        bool          `yaml:"disable_tls"`
 	Routes            []ConfigRoute `yaml:"routes"`
 	FallbackDomain    string        `yaml:"fallback_domain"`
 	Graceful          bool          `yaml:"graceful"`

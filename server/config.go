@@ -7,6 +7,7 @@ type Config struct {
 	NumCPU         int
 	ListenAddr     string
 	ListenAddrTLS  string
+	DisableTLS     bool
 	FallbackDomain string
 	Graceful       bool
 	CachePath      string

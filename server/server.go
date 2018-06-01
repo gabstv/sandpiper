@@ -32,6 +32,7 @@ type sServer struct {
 	domains     map[string]*route.Route
 	Logger      *log.Logger
 	closeChan   chan os.Signal
+	htps        *http.Server
 }
 
 // Default starts a server with the default configuration options
@@ -88,7 +89,55 @@ func (s *sServer) Add(r route.Route) error {
 		return err
 	}
 	s.domains[r.Domain] = rr
+	s.updateCertificates()
 	return nil
+}
+
+func (s *sServer) updateCertificates() *autocert.Manager {
+	autocdomains := make([]string, 0)
+	for _, v := range s.domains {
+		if v.Autocert {
+			autocdomains = append(autocdomains, v.Domain)
+		}
+	}
+	if len(autocdomains) < 1 {
+		return nil
+	}
+	var m *autocert.Manager
+	cpath := "/tmp/sandpiper"
+	if s.Cfg.CachePath != "" {
+		cpath = s.Cfg.CachePath
+	}
+	dcache := autocert.DirCache(cpath)
+	m = &autocert.Manager{
+		Prompt:     autocert.AcceptTOS,
+		HostPolicy: autocert.HostWhitelist(autocdomains...),
+		Cache:      &dcache,
+	}
+	if s.Cfg.LetsEncryptURL != "" {
+		m.Client = &acme.Client{DirectoryURL: s.Cfg.LetsEncryptURL}
+	}
+
+	certs := make(map[string]tls.Certificate)
+	for k, v := range s.domains {
+		if !v.Autocert && len(v.Certificate.KeyFile) > 0 && len(v.Certificate.CertFile) > 0 {
+			ncert, err := tls.LoadX509KeyPair(v.Certificate.CertFile, v.Certificate.KeyFile)
+			if err != nil {
+				s.Logger.Println("Error loading certificate for", k, err.Error())
+			} else {
+				certs[k] = ncert
+			}
+		}
+	}
+
+	getcertfn := func(clientHello *tls.ClientHelloInfo) (*tls.Certificate, error) {
+		if dom, ok := certs[clientHello.ServerName]; ok {
+			return &dom, nil
+		}
+		return m.GetCertificate(clientHello)
+	}
+	s.htps.TLSConfig = &tls.Config{GetCertificate: getcertfn}
+	return m
 }
 
 func (s *sServer) Run() error {
@@ -96,67 +145,20 @@ func (s *sServer) Run() error {
 	errc := make(chan error, 3)
 	ctx, cancelf := context.WithCancel(context.Background())
 
-	// Autocert
-	autocdomains := make([]string, 0)
-	for _, v := range s.domains {
-		if v.Autocert {
-			autocdomains = append(autocdomains, v.Domain)
-		}
+	s.htps = &http.Server{
+		Addr: s.Cfg.ListenAddrTLS,
 	}
-	var sv *http.Server
-	var m *autocert.Manager
-	if len(autocdomains) > 0 {
-		cpath := "/tmp/sandpiper"
-		if s.Cfg.CachePath != "" {
-			cpath = s.Cfg.CachePath
-		}
-		dcache := autocert.DirCache(cpath)
-		m = &autocert.Manager{
-			Prompt:     autocert.AcceptTOS,
-			HostPolicy: autocert.HostWhitelist(autocdomains...),
-			Cache:      &dcache,
-		}
-		if s.Cfg.LetsEncryptURL != "" {
-			m.Client = &acme.Client{DirectoryURL: s.Cfg.LetsEncryptURL}
-		}
+	autocertManager := s.updateCertificates()
 
-		certs := make(map[string]tls.Certificate)
-		for k, v := range s.domains {
-			if !v.Autocert && len(v.Certificate.KeyFile) > 0 && len(v.Certificate.CertFile) > 0 {
-				ncert, err := tls.LoadX509KeyPair(v.Certificate.CertFile, v.Certificate.KeyFile)
-				if err != nil {
-					s.Logger.Println("Error loading certificate for", k, err.Error())
-				} else {
-					certs[k] = ncert
-				}
-			}
-		}
-
-		getcertfn := func(clientHello *tls.ClientHelloInfo) (*tls.Certificate, error) {
-			if dom, ok := certs[clientHello.ServerName]; ok {
-				return &dom, nil
-			}
-			return m.GetCertificate(clientHello)
-		}
-		sv = &http.Server{
-			Addr:      s.Cfg.ListenAddrTLS,
-			TLSConfig: &tls.Config{GetCertificate: getcertfn},
-		}
-	} else {
-		sv = &http.Server{
-			Addr: s.Cfg.ListenAddrTLS,
-		}
-	}
-
-	sv.Handler = s
+	s.htps.Handler = s
 
 	go func() {
-		if m == nil {
+		if autocertManager == nil {
 			s.Logger.Println("Listening HTTP")
 			errc <- http.ListenAndServe(s.Cfg.ListenAddr, s)
 		} else {
 			s.Logger.Println("Listening accepting HTTP requests to the SNI challenge")
-			errc <- http.ListenAndServe(s.Cfg.ListenAddr, m.HTTPHandler(s))
+			errc <- http.ListenAndServe(s.Cfg.ListenAddr, autocertManager.HTTPHandler(s))
 		}
 	}()
 
@@ -167,14 +169,14 @@ func (s *sServer) Run() error {
 		}
 	}
 	var wrapper *util.ServerWrapper
-	if len(certs) > 0 || len(autocdomains) > 0 {
+	if !s.Cfg.DisableTLS {
 		go func() {
 			if s.Cfg.Graceful {
 				s.Logger.Println("Listening HTTPS (Graceful)")
-				wrapper = util.NewGracefulServer(manners.NewWithServer(sv))
+				wrapper = util.NewGracefulServer(manners.NewWithServer(s.htps))
 			} else {
 				s.Logger.Println("Listening HTTPS (Vanilla)")
-				wrapper = util.NewVanillaServer(sv)
+				wrapper = util.NewVanillaServer(s.htps)
 			}
 			errc <- util.ListenAndServeTLSSNI(wrapper, certs)
 		}()
