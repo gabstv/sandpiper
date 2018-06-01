@@ -24,6 +24,7 @@ type Server interface {
 	Close()
 	Init()
 	ServeHTTP(w http.ResponseWriter, r *http.Request)
+	Routes() map[string]route.Route
 }
 
 type sServer struct {
@@ -45,6 +46,14 @@ func Default(cfg *Config) Server {
 	s.domains = make(map[string]*route.Route, 0)
 	s.Logger = log.New(os.Stderr, "[sp server] ", log.LstdFlags)
 	return s
+}
+
+func (s *sServer) Routes() map[string]route.Route {
+	mm := make(map[string]route.Route)
+	for k, v := range s.domains {
+		mm[k] = *v
+	}
+	return mm
 }
 
 func (s *sServer) startAPI(ctx context.Context) error {

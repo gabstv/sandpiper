@@ -1,15 +1,16 @@
 package server
 
 import (
-	"fmt"
-	"github.com/gabstv/freeport"
-	"github.com/gabstv/sandpiper/route"
 	"context"
+	"fmt"
 	"net/http"
 	"time"
 
-	"github.com/gin-gonic/gin"
+	"github.com/gabstv/freeport"
+	"github.com/gabstv/sandpiper/route"
+
 	"github.com/gabstv/sandpiper/api"
+	"github.com/gin-gonic/gin"
 )
 
 func runAPIV1(ctx context.Context, sv Server, listen, key string, debug bool) {
@@ -37,18 +38,23 @@ func runAPIV1(ctx context.Context, sv Server, listen, key string, debug bool) {
 		})
 	})
 
+	g.GET("/domains", func(c *gin.Context) {
+		vv := sv.Routes()
+		c.JSON(http.StatusOK, vv)
+	})
+
 	// UPSERT a new route!
-	g.PUT("/route", func(c *gin.Context){
+	g.PUT("/route", func(c *gin.Context) {
 		jd := &api.NewRoute{}
 		if err := c.BindJSON(jd); err != nil {
 			c.JSON(http.StatusOK, gin.H{
 				"success": false,
-				"error": err.Error(),
+				"error":   err.Error(),
 			})
 			return
 		}
 		rrr := route.Route{
-			Domain: jd.Domain,
+			Domain:   jd.Domain,
 			Autocert: jd.Autocert,
 			Server: route.RouteServer{
 				OutAddress: jd.OutPath,
@@ -65,7 +71,7 @@ func runAPIV1(ctx context.Context, sv Server, listen, key string, debug bool) {
 			sv := rrr.Server
 			sv.OutConnType = route.HTTPS_SKIP_VERIFY
 			rrr.Server = sv
-		}else if jd.OutType == "https" {
+		} else if jd.OutType == "https" {
 			sv := rrr.Server
 			sv.OutConnType = route.HTTPS_VERIFY
 			rrr.Server = sv
@@ -74,24 +80,24 @@ func runAPIV1(ctx context.Context, sv Server, listen, key string, debug bool) {
 			if err != nil {
 				c.JSON(http.StatusOK, gin.H{
 					"success": false,
-					"error": "tcp port err: " + err.Error(),
+					"error":   "tcp port err: " + err.Error(),
 				})
 				return
 			}
-			sv := rrr.Server
-			if sv.OutAddress == "" {
-				sv.OutAddress = fmt.Sprintf("localhost:%d", ntcp)
-			}else{
-				sv.OutAddress = fmt.Sprintf("%v:%d", sv.OutAddress, ntcp)
+			sv2 := rrr.Server
+			if sv2.OutAddress == "" {
+				sv2.OutAddress = fmt.Sprintf("localhost:%d", ntcp)
+			} else {
+				sv2.OutAddress = fmt.Sprintf("%v:%d", sv2.OutAddress, ntcp)
 			}
-			rrr.Server = sv
+			rrr.Server = sv2
 			newport = ntcp
 		}
 
 		if err := sv.Add(rrr); err != nil {
 			c.JSON(http.StatusOK, gin.H{
 				"success": false,
-				"error": err.Error(),
+				"error":   err.Error(),
 			})
 			return
 		}
@@ -99,9 +105,9 @@ func runAPIV1(ctx context.Context, sv Server, listen, key string, debug bool) {
 		if newport > 0 {
 			c.JSON(http.StatusOK, gin.H{
 				"success": true,
-				"port": newport,
+				"port":    newport,
 			})
-		}else{
+		} else {
 			c.JSON(http.StatusOK, gin.H{
 				"success": true,
 			})
