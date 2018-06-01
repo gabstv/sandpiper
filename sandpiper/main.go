@@ -68,6 +68,10 @@ func main() {
 	svCfg.APIDomainAutocert = cfg.APIDomainAutocert
 
 	// ENV VARS
+	if vv := os.Getenv("FALLBACK_DOMAIN"); vv != "" {
+		svCfg.FallbackDomain = vv
+	}
+
 	if vv := os.Getenv("API_LISTEN"); vv != "" {
 		svCfg.APIListen = vv
 	}
