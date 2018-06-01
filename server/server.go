@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"crypto/tls"
 	"log"
 	"net/http"
@@ -8,12 +9,11 @@ import (
 	"runtime"
 	"time"
 
-	"golang.org/x/crypto/acme"
-
 	"github.com/gabstv/manners"
 	"github.com/gabstv/sandpiper/pathtree"
 	"github.com/gabstv/sandpiper/route"
 	"github.com/gabstv/sandpiper/util"
+	"golang.org/x/crypto/acme"
 	"golang.org/x/crypto/acme/autocert"
 )
 
@@ -46,6 +46,27 @@ func Default(cfg *Config) Server {
 	return s
 }
 
+func (s *sServer) startAPI(ctx context.Context) error {
+	if s.Cfg.APIListen == "" {
+		return nil
+	}
+	go runAPIV1(ctx, s, s.Cfg.APIListen, s.Cfg.APIKey, s.Cfg.Debug)
+	if s.Cfg.APIDomain != "" {
+		s.Add(route.Route{
+			Autocert: s.Cfg.APIDomainAutocert,
+			Domain:   s.Cfg.APIDomain,
+			Server: route.RouteServer{
+				OutAddress:  s.Cfg.APIListen,
+				OutConnType: route.HTTP,
+			},
+			WsCFG: util.WsConfig{
+				Enabled: false,
+			},
+		})
+	}
+	return nil
+}
+
 func (s *sServer) Add(r route.Route) error {
 	rr := &route.Route{}
 	*rr = r
@@ -73,6 +94,7 @@ func (s *sServer) Add(r route.Route) error {
 func (s *sServer) Run() error {
 	s.Init()
 	errc := make(chan error, 3)
+	ctx, cancelf := context.WithCancel(context.Background())
 
 	// Autocert
 	autocdomains := make([]string, 0)
@@ -158,9 +180,15 @@ func (s *sServer) Run() error {
 		}()
 	}
 	//
+	// API
+	if err := s.startAPI(ctx); err != nil {
+		s.Logger.Println("START API ERROR:", err.Error())
+	}
+	//
 	go func() {
 		s.closeChan = make(chan os.Signal, 1)
 		<-s.closeChan
+		cancelf()
 		if wrapper != nil {
 			wrapper.Close()
 		}

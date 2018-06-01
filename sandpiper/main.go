@@ -62,6 +62,24 @@ func main() {
 	svCfg.FallbackDomain = cfg.FallbackDomain
 	svCfg.Graceful = cfg.Graceful
 	svCfg.CachePath = cfg.CachePath
+	svCfg.APIListen = cfg.APIListen
+	svCfg.APIKey = cfg.APIKey
+	svCfg.APIDomain = cfg.APIDomain
+	svCfg.APIDomainAutocert = cfg.APIDomainAutocert
+
+	// ENV VARS
+	if vv := os.Getenv("API_LISTEN"); vv != "" {
+		svCfg.APIListen = vv
+	}
+	if vv := os.Getenv("API_KEY"); vv != "" {
+		svCfg.APIKey = vv
+	}
+	if vv := os.Getenv("API_DOMAIN"); vv != "" {
+		svCfg.APIDomain = vv
+	}
+	if vv := os.Getenv("API_DOMAIN_AUTOCERT"); vv != "" {
+		svCfg.APIDomainAutocert = (vv == "1")
+	}
 
 	s := server.Default(svCfg)
 
@@ -170,14 +188,18 @@ func unpackConnType(input string) (route.ConnType, bool) {
 }
 
 type Config struct {
-	Debug          bool          `yaml:"debug"`
-	NumCPU         int           `yaml:"num_cpu"`
-	ListenAddr     string        `yaml:"listen_addr"`
-	ListenAddrTLS  string        `yaml:"listen_addr_tls"`
-	Routes         []ConfigRoute `yaml:"routes"`
-	FallbackDomain string        `yaml:"fallback_domain"`
-	Graceful       bool          `yaml:"graceful"`
-	CachePath      string        `yaml:"cache_path"`
+	Debug             bool          `yaml:"debug"`
+	NumCPU            int           `yaml:"num_cpu"`
+	ListenAddr        string        `yaml:"listen_addr"`
+	ListenAddrTLS     string        `yaml:"listen_addr_tls"`
+	Routes            []ConfigRoute `yaml:"routes"`
+	FallbackDomain    string        `yaml:"fallback_domain"`
+	Graceful          bool          `yaml:"graceful"`
+	CachePath         string        `yaml:"cache_path"`
+	APIListen         string        `yaml:"api_listen"`
+	APIKey            string        `yaml:"api_key"`
+	APIDomain         string        `yaml:"api_domain"`
+	APIDomainAutocert bool          `yaml:"api_domain_autocert"`
 }
 
 type ConfigRoute struct {

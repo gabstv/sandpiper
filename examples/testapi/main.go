@@ -14,12 +14,12 @@ func main() {
 		Debug:          true,
 		ListenAddr:     ":80",
 		ListenAddrTLS:  ":443",
-		FallbackDomain: "letest.happytanks.com",
+		FallbackDomain: "latest.happytanks.com",
 		LetsEncryptURL: "https://acme-staging.api.letsencrypt.org/directory",
 	}
 	sps := server.Default(&cfg)
 	sps.Add(route.Route{
-		Domain: "letest.happytanks.com",
+		Domain: "latest.happytanks.com",
 		Server: route.RouteServer{
 			OutAddress:  "localhost:9406",
 			OutConnType: route.HTTP,
