@@ -19,20 +19,20 @@ const (
 )
 
 type Route struct {
-	Domain      string
-	Server      RouteServer //TODO: maybe support load balancing in the future
-	Certificate util.Certificate
-	Autocert    bool
-	WsCFG       util.WsConfig
+	Domain      string           `json:"domain"`
+	Server      RouteServer      `json:"server"` //TODO: maybe support load balancing in the future
+	Certificate util.Certificate `json:"certificate"`
+	Autocert    bool             `json:"autocert"`
+	WsCFG       util.WsConfig    `json:"wscfg"`
 	rp          *util.ReverseProxy
-	AuthMode    string
-	AuthKey     string
-	AuthValue   string
+	AuthMode    string `json:"auth_mode"`
+	AuthKey     string `json:"auth_key"`
+	AuthValue   string `json:"auth_value"`
 }
 
 type RouteServer struct {
-	OutConnType ConnType
-	OutAddress  string
+	OutConnType ConnType `json:"out_conn_type"`
+	OutAddress  string   `json:"out_address"`
 }
 
 func (rs *RouteServer) URL() *url.URL {

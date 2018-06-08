@@ -38,7 +38,7 @@ func runAPIV1(ctx context.Context, sv Server, listen, key string, debug bool) {
 		})
 	})
 
-	g.GET("/domains", func(c *gin.Context) {
+	g.GET("/routes", func(c *gin.Context) {
 		vv := sv.Routes()
 		c.JSON(http.StatusOK, vv)
 	})
