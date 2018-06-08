@@ -91,6 +91,9 @@ func main() {
 	if vv := os.Getenv("API_DOMAIN_AUTOCERT"); vv != "" {
 		svCfg.APIDomainAutocert = (vv == "1")
 	}
+	if vv := os.Getenv("LETSENCRYPT_URL"); vv != "" {
+		svCfg.LetsEncryptURL = vv
+	}
 
 	s := server.Default(svCfg)
 

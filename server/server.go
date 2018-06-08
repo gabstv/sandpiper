@@ -145,6 +145,19 @@ func (s *sServer) updateCertificates() *autocert.Manager {
 		}
 		return m.GetCertificate(clientHello)
 	}
+	if s.Cfg.LetsEncryptURL == "dev" {
+		getcertfn = func(clientHello *tls.ClientHelloInfo) (*tls.Certificate, error) {
+			if dom, ok := certs[clientHello.ServerName]; ok {
+				return &dom, nil
+			}
+			cccert, err := createCert(clientHello)
+			if err != nil {
+				return nil, err
+			}
+			certs[clientHello.ServerName] = *cccert
+			return cccert, nil
+		}
+	}
 	s.htps.TLSConfig = &tls.Config{GetCertificate: getcertfn}
 	return m
 }
