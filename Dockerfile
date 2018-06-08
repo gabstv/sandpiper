@@ -8,7 +8,7 @@ WORKDIR $GOPATH/src/github.com/gabstv/sandpiper/sandpiper
 RUN go build -o /go/bin/sandpiper
 
 # buid
-FROM scratch
+FROM alpine
 
 #RUN mkdir -p /sandpiper # mkdir not available on scratch
 WORKDIR /sandpiper

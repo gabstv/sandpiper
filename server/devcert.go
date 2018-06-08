@@ -1,110 +1,75 @@
 package server
 
 import (
+	"bytes"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
+	"crypto/rsa"
 	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"encoding/pem"
+	"fmt"
+	"log"
 	"math/big"
-	"net"
+	"os"
 	"time"
 )
 
-func createCert(hello *tls.ClientHelloInfo) (*tls.Certificate, error) {
-	serialNumberLimit := new(big.Int).Lsh(big.NewInt(1), 128)
-	serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
+func createCert(hello *tls.ClientHelloInfo) (tls.Certificate, error) {
+	priv, err := ecdsa.GenerateKey(elliptic.P521(), rand.Reader)
 	if err != nil {
-		return nil, err
+		log.Fatal(err)
 	}
-
-	rootKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	if err != nil {
-		return nil, err
-	}
-
-	rootTemplate := x509.Certificate{
-		SerialNumber: serialNumber,
+	template := x509.Certificate{
+		SerialNumber: big.NewInt(1),
 		Subject: pkix.Name{
 			Organization: []string{"Acme Co"},
-			CommonName:   "DEV ROOT CA",
 		},
-		NotBefore:             time.Now().Add(time.Hour * -1),
-		NotAfter:              time.Now().Add(time.Hour * 24 * 365),
-		KeyUsage:              x509.KeyUsageCertSign,
+		NotBefore: time.Now(),
+		NotAfter:  time.Now().Add(time.Hour * 24 * 180),
+
+		KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
 		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
 		BasicConstraintsValid: true,
-		IsCA: true,
 	}
 
-	derBytes1, err := x509.CreateCertificate(rand.Reader, &rootTemplate, &rootTemplate, &rootKey.PublicKey, rootKey)
+	derBytes, err := x509.CreateCertificate(rand.Reader, &template, &template, publicKey(priv), priv)
 	if err != nil {
-		return nil, err
+		log.Fatalf("Failed to create certificate: %s", err)
 	}
+	cert0 := &bytes.Buffer{}
+	pem.Encode(cert0, &pem.Block{Type: "CERTIFICATE", Bytes: derBytes})
+	key0 := &bytes.Buffer{}
+	pem.Encode(key0, pemBlockForKey(priv))
 
-	leafKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	if err != nil {
-		return nil, err
-	}
+	return tls.X509KeyPair(cert0.Bytes(), key0.Bytes())
+}
 
-	serialNumber, err = rand.Int(rand.Reader, serialNumberLimit)
-	leafTemplate := x509.Certificate{
-		SerialNumber: serialNumber,
-		Subject: pkix.Name{
-			Organization: []string{"Acme Co"},
-			CommonName:   "test_cert_1",
-		},
-		NotBefore:             rootTemplate.NotAfter,
-		NotAfter:              rootTemplate.NotAfter,
-		KeyUsage:              x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment,
-		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
-		BasicConstraintsValid: true,
-		IsCA: false,
+func publicKey(priv interface{}) interface{} {
+	switch k := priv.(type) {
+	case *rsa.PrivateKey:
+		return &k.PublicKey
+	case *ecdsa.PrivateKey:
+		return &k.PublicKey
+	default:
+		return nil
 	}
+}
 
-	if ip := net.ParseIP(hello.ServerName); ip != nil {
-		leafTemplate.IPAddresses = append(leafTemplate.IPAddresses, ip)
+func pemBlockForKey(priv interface{}) *pem.Block {
+	switch k := priv.(type) {
+	case *rsa.PrivateKey:
+		return &pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(k)}
+	case *ecdsa.PrivateKey:
+		b, err := x509.MarshalECPrivateKey(k)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Unable to marshal ECDSA private key: %v", err)
+			os.Exit(2)
+		}
+		return &pem.Block{Type: "EC PRIVATE KEY", Bytes: b}
+	default:
+		return nil
 	}
-	leafTemplate.DNSNames = append(leafTemplate.DNSNames, hello.ServerName)
-
-	derBytes2, err := x509.CreateCertificate(rand.Reader, &leafTemplate, &rootTemplate, &leafKey.PublicKey, rootKey)
-	if err != nil {
-		return nil, err
-	}
-
-	clientKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	if err != nil {
-		return nil, err
-	}
-
-	clientTemplate := x509.Certificate{
-		SerialNumber: new(big.Int).SetInt64(4),
-		Subject: pkix.Name{
-			Organization: []string{"Acme Co"},
-			CommonName:   "client_auth_test_cert",
-		},
-		NotBefore:             rootTemplate.NotBefore,
-		NotAfter:              rootTemplate.NotAfter,
-		KeyUsage:              x509.KeyUsageDigitalSignature,
-		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
-		BasicConstraintsValid: true,
-		IsCA: false,
-	}
-
-	derBytes3, err := x509.CreateCertificate(rand.Reader, &clientTemplate, &rootTemplate, &clientKey.PublicKey, rootKey)
-	if err != nil {
-		return nil, err
-	}
-
-	c := tls.Certificate{
-		Certificate: [][]byte{
-			derBytes1,
-			derBytes2,
-			derBytes3,
-		},
-		Leaf:       &leafTemplate,
-		PrivateKey: clientKey,
-	}
-	return &c, nil
 }

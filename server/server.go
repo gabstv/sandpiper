@@ -154,8 +154,8 @@ func (s *sServer) updateCertificates() *autocert.Manager {
 			if err != nil {
 				return nil, err
 			}
-			certs[clientHello.ServerName] = *cccert
-			return cccert, nil
+			certs[clientHello.ServerName] = cccert
+			return &cccert, nil
 		}
 	}
 	s.htps.TLSConfig = &tls.Config{GetCertificate: getcertfn}
