@@ -18,6 +18,15 @@ func runAPIV1(ctx context.Context, sv Server, listen, key string, debug bool) {
 		gin.SetMode(gin.ReleaseMode)
 	}
 	r := gin.Default()
+
+	r.GET("/health-check", func(c *gin.Context) {
+		c.String(http.StatusOK, "OK")
+	})
+
+	r.GET("/", func(c *gin.Context) {
+		c.String(http.StatusOK, "sandpiper api")
+	})
+
 	g := r.Group("/v1")
 	// authorization middleware
 	g.Use(func(c *gin.Context) {
