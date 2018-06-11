@@ -69,6 +69,9 @@ func main() {
 	svCfg.APIDomainAutocert = cfg.APIDomainAutocert
 
 	// ENV VARS
+	if vv := os.Getenv("DEBUG"); vv != "" {
+		svCfg.Debug = (vv == "1")
+	}
 	if vv := os.Getenv("LISTEN"); vv != "" {
 		svCfg.ListenAddr = vv
 	}
@@ -204,6 +207,7 @@ func unpackConnType(input string) (route.ConnType, bool) {
 	return route.HTTP, false
 }
 
+// Config main config structure (yml)
 type Config struct {
 	Debug             bool          `yaml:"debug"`
 	NumCPU            int           `yaml:"num_cpu"`
@@ -220,6 +224,7 @@ type Config struct {
 	APIDomainAutocert bool          `yaml:"api_domain_autocert"`
 }
 
+// ConfigRoute represents a domain route
 type ConfigRoute struct {
 	Domain                 string        `yaml:"domain"`
 	OutgoingServerConnType string        `yaml:"out_conn_type"`

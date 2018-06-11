@@ -25,6 +25,8 @@ type Server interface {
 	Init()
 	ServeHTTP(w http.ResponseWriter, r *http.Request)
 	Routes() map[string]route.Route
+	GetConfig() Config
+	SetConfig(cfg Config)
 }
 
 type sServer struct {
@@ -34,6 +36,14 @@ type sServer struct {
 	Logger      *log.Logger
 	closeChan   chan os.Signal
 	htps        *http.Server
+}
+
+func (s *sServer) GetConfig() Config  {
+	return s.Cfg
+}
+
+func (s *sServer) SetConfig(cfg Config)  {
+	s.Cfg = cfg
 }
 
 // Default starts a server with the default configuration options

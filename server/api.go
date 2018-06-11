@@ -7,9 +7,8 @@ import (
 	"time"
 
 	"github.com/gabstv/freeport"
-	"github.com/gabstv/sandpiper/route"
-
 	"github.com/gabstv/sandpiper/api"
+	"github.com/gabstv/sandpiper/route"
 	"github.com/gin-gonic/gin"
 )
 
@@ -50,6 +49,40 @@ func runAPIV1(ctx context.Context, sv Server, listen, key string, debug bool) {
 	g.GET("/routes", func(c *gin.Context) {
 		vv := sv.Routes()
 		c.JSON(http.StatusOK, vv)
+	})
+
+	g.GET("/fallback-domain", func(c *gin.Context) {
+		cfg := sv.GetConfig()
+		c.JSON(http.StatusOK, gin.H{
+			"value": cfg.FallbackDomain,
+		})
+	})
+
+	g.POST("/fallback-domain", func(c *gin.Context) {
+		jd := struct {
+			Value string `json:"value"`
+		}{}
+		if err := c.BindJSON(&jd); err != nil {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"error":   "json parse error: " + err.Error(),
+			})
+			return
+		}
+		routes := sv.Routes()
+		if _, ok := routes[jd.Value]; !ok {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"error":   "domain does not exist",
+			})
+			return
+		}
+		cfg := sv.GetConfig()
+		cfg.FallbackDomain = jd.Value
+		sv.SetConfig(cfg)
+		c.JSON(http.StatusOK, gin.H{
+			"success": true,
+		})
 	})
 
 	// UPSERT a new route!
