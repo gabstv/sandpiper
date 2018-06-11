@@ -263,6 +263,12 @@ func (s *sServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				}
 				dom.ReverseProxy(w, r)
 				return
+			} else {
+				if s.Cfg.Debug {
+					s.Logger.Println("FALLBACK DOMAIN NOT FOUND")
+				}
+				http.Error(w, "fallback domain not found "+h, http.StatusInternalServerError)
+				return
 			}
 		} else {
 			if s.Cfg.Debug {
