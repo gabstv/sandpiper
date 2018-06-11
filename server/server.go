@@ -175,7 +175,7 @@ func (s *sServer) Run() error {
 	s.htps.Handler = s
 
 	go func() {
-		if autocertManager == nil {
+		if autocertManager == nil || s.Cfg.DisableTLS {
 			s.Logger.Println("Listening HTTP")
 			errc <- http.ListenAndServe(s.Cfg.ListenAddr, s)
 		} else {

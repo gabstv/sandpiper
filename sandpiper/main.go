@@ -94,6 +94,9 @@ func main() {
 	if vv := os.Getenv("LETSENCRYPT_URL"); vv != "" {
 		svCfg.LetsEncryptURL = vv
 	}
+	if vv := os.Getenv("DISABLE_TLS"); vv != "" {
+		svCfg.DisableTLS = (vv == "1")
+	}
 
 	s := server.Default(svCfg)
 
