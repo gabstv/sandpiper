@@ -77,14 +77,12 @@ func (rt *Route) ReverseProxy(w http.ResponseWriter, r *http.Request) {
 			rp := buildReverseProxy(rt)
 			if rt.ForceHTTPS {
 				rt.fn = func(w http.ResponseWriter, r *http.Request) {
-					if (r.Header.Get("X-Forwarded-Proto") == "http" || r.URL.Scheme == "http") && r.Header.Get("X-Sandpiper-Redirected") != "true" {
+					if r.Header.Get("X-Forwarded-Proto") == "http" {
 						url2 := *r.URL
 						url2.Scheme = "https"
-						w.Header().Set("X-Sandpiper-Redirected", "true")
 						http.Redirect(w, r, url2.String(), http.StatusPermanentRedirect)
 						return
 					}
-					//if r.URL.Scheme == http.
 					rp.ServeHTTP(w, r)
 				}
 			} else {
