@@ -2,12 +2,13 @@ package server
 
 import (
 	"crypto/tls"
-	"github.com/gabstv/sandpiper/route"
-	"github.com/gabstv/sandpiper/util"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
+
+	"github.com/gabstv/sandpiper/route"
+	"github.com/gabstv/sandpiper/util"
 )
 
 func testRequest(host, method, path string) (respRec *httptest.ResponseRecorder, r *http.Request) {
@@ -129,10 +130,48 @@ func TestServerSSL(t *testing.T) {
 		t.Log(r.URL)
 		t.Fatal(err)
 	}
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
 		bf := make([]byte, 512)
 		resp.Body.Read(bf)
 		t.Fatalf("Status should be 200 but it is %v '%s'", resp.StatusCode, string(bf))
 	}
 
+}
+
+func TestRedirect(t *testing.T) {
+	sv := Default(&Config{
+		FallbackDomain: "a",
+		ListenAddr:     ":9887",
+		DisableTLS:     true,
+	})
+	r0 := route.Route{
+		Domain: "a",
+		Server: route.RouteServer{
+			OutConnType: route.REDIRECT,
+			OutAddress:  "https://www.google.com",
+		},
+	}
+	sv.Add(r0)
+	go func() {
+		err := sv.Run()
+		if err != nil {
+			t.Fatal(err)
+		}
+	}()
+	time.Sleep(time.Millisecond * 250)
+
+	_, r := testRequest("example.com", "GET", "http://localhost:9887/")
+	cl := &http.Client{
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+	}
+	resp, err := cl.Do(r)
+	if err != nil {
+		t.Fatal(err)
+		return
+	}
+	if resp.StatusCode != http.StatusPermanentRedirect {
+		t.Fatal("http status code not 301", resp.Status, resp.StatusCode, resp.Header)
+	}
 }

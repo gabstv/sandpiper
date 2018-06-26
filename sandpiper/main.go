@@ -204,6 +204,9 @@ func unpackConnType(input string) (route.ConnType, bool) {
 	if input == "HTTPS_SKIP_VERIFY" {
 		return route.HTTPS_SKIP_VERIFY, true
 	}
+	if input == "REDIRECT" {
+		return route.REDIRECT, true
+	}
 	return route.HTTP, false
 }
 
