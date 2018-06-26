@@ -34,6 +34,7 @@ type Route struct {
 	AuthMode    string `json:"auth_mode"`
 	AuthKey     string `json:"auth_key"`
 	AuthValue   string `json:"auth_value"`
+	ForceHTTPS  bool   `json:"force_https"`
 }
 
 type RouteServer struct {
@@ -73,19 +74,38 @@ func (rt *Route) ReverseProxy(w http.ResponseWriter, r *http.Request) {
 				http.Redirect(w, r, url2.String(), http.StatusPermanentRedirect)
 			}
 		} else {
-			rp := util.NewSingleHostReverseProxy(rt.Server.URL(), rt.WsCFG)
-			if rt.Server.OutConnType == HTTPS_SKIP_VERIFY {
-				rp.Transport = &http.Transport{
-					TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-					Dial: func(network, addr string) (net.Conn, error) {
-						return net.DialTimeout(network, addr, time.Duration(60*time.Second))
-					},
+			rp := buildReverseProxy(rt)
+			if rt.ForceHTTPS {
+				rt.fn = func(w http.ResponseWriter, r *http.Request) {
+					if (r.Header.Get("X-Forwarded-Proto") == "http" || r.URL.Scheme == "http") && r.Header.Get("X-Sandpiper-Redirected") != "true" {
+						url2 := *r.URL
+						url2.Scheme = "https"
+						w.Header().Set("X-Sandpiper-Redirected", "true")
+						http.Redirect(w, r, url2.String(), http.StatusPermanentRedirect)
+						return
+					}
+					//if r.URL.Scheme == http.
+					rp.ServeHTTP(w, r)
 				}
-			}
-			rt.fn = func(w http.ResponseWriter, r *http.Request) {
-				rp.ServeHTTP(w, r)
+			} else {
+				rt.fn = func(w http.ResponseWriter, r *http.Request) {
+					rp.ServeHTTP(w, r)
+				}
 			}
 		}
 	}
 	rt.fn(w, r)
+}
+
+func buildReverseProxy(rt *Route) *util.ReverseProxy {
+	rp := util.NewSingleHostReverseProxy(rt.Server.URL(), rt.WsCFG)
+	if rt.Server.OutConnType == HTTPS_SKIP_VERIFY {
+		rp.Transport = &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+			Dial: func(network, addr string) (net.Conn, error) {
+				return net.DialTimeout(network, addr, time.Duration(60*time.Second))
+			},
+		}
+	}
+	return rp
 }

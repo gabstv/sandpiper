@@ -123,6 +123,7 @@ func main() {
 		r.AuthMode = v.AuthMode
 		r.AuthKey = v.AuthKey
 		r.AuthValue = v.AuthValue
+		r.ForceHTTPS = v.ForceHTTPS
 		err = s.Add(r)
 		if err != nil {
 			fmt.Fprintf(stderr, "\nERROR: Could not add route %v\n%v\n",
@@ -239,4 +240,5 @@ type ConfigRoute struct {
 	AuthMode               string        `yaml:"auth_mode"`
 	AuthKey                string        `yaml:"auth_key"`
 	AuthValue              string        `yaml:"auth_value"`
+	ForceHTTPS             bool          `yaml:"force_https"`
 }
