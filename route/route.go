@@ -80,6 +80,7 @@ func (rt *Route) ReverseProxy(w http.ResponseWriter, r *http.Request) {
 					if r.Header.Get("X-Forwarded-Proto") == "http" {
 						url2 := *r.URL
 						url2.Scheme = "https"
+						url2.Host = r.Host
 						http.Redirect(w, r, url2.String(), http.StatusPermanentRedirect)
 						return
 					}
