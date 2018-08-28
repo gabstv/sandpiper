@@ -38,11 +38,11 @@ type sServer struct {
 	htps        *http.Server
 }
 
-func (s *sServer) GetConfig() Config  {
+func (s *sServer) GetConfig() Config {
 	return s.Cfg
 }
 
-func (s *sServer) SetConfig(cfg Config)  {
+func (s *sServer) SetConfig(cfg Config) {
 	s.Cfg = cfg
 }
 
@@ -168,7 +168,9 @@ func (s *sServer) updateCertificates() *autocert.Manager {
 			return &cccert, nil
 		}
 	}
-	s.htps.TLSConfig = &tls.Config{GetCertificate: getcertfn}
+	if s.htps != nil {
+		s.htps.TLSConfig = &tls.Config{GetCertificate: getcertfn}
+	}
 	return m
 }
 
