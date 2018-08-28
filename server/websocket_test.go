@@ -54,7 +54,6 @@ func (s *wsTestServer) wsread() {
 		_, msg, err := s.ws.ReadMessage()
 		if err != nil {
 			return // probably EOF
-			break
 		}
 		s.t.Logf("Received '%v'", string(msg))
 		s.Numm++
