@@ -3,6 +3,7 @@ FROM golang:alpine as builder
 
 RUN apk update && apk add git && apk add ca-certificates
 
+RUN go get -u -v golang.org/x/crypto/acme/autocert
 RUN go get github.com/gabstv/sandpiper/sandpiper
 WORKDIR $GOPATH/src/github.com/gabstv/sandpiper/sandpiper
 RUN go build -o /go/bin/sandpiper
