@@ -120,6 +120,7 @@ func (s *sServer) updateCertificates() *autocert.Manager {
 		}
 	}
 	if len(autocdomains) < 1 {
+		log.Println("no autocert domains")
 		return nil
 	}
 	var m *autocert.Manager
@@ -170,6 +171,12 @@ func (s *sServer) updateCertificates() *autocert.Manager {
 	}
 	if s.htps != nil {
 		s.htps.TLSConfig = &tls.Config{GetCertificate: getcertfn}
+	} else {
+		s.Logger.Println("s.htps WAS NIL")
+		s.htps = &http.Server{
+			Addr: s.Cfg.ListenAddrTLS,
+		}
+		s.htps.TLSConfig = &tls.Config{GetCertificate: getcertfn}
 	}
 	return m
 }
@@ -189,6 +196,9 @@ func (s *sServer) Run() error {
 	go func() {
 		if autocertManager == nil || s.Cfg.DisableTLS {
 			s.Logger.Println("Listening HTTP")
+			if autocertManager == nil {
+				s.Logger.Println("autocertManager is nil")
+			}
 			errc <- http.ListenAndServe(s.Cfg.ListenAddr, s)
 		} else {
 			s.Logger.Println("Listening accepting HTTP requests to the SNI challenge")
