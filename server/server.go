@@ -151,6 +151,7 @@ func (s *sServer) updateCertificates() *autocert.Manager {
 	}
 
 	getcertfn := func(clientHello *tls.ClientHelloInfo) (*tls.Certificate, error) {
+		s.Logger.Println("get certificate", clientHello)
 		if dom, ok := certs[clientHello.ServerName]; ok {
 			return &dom, nil
 		}
@@ -158,6 +159,7 @@ func (s *sServer) updateCertificates() *autocert.Manager {
 	}
 	if s.Cfg.LetsEncryptURL == "dev" {
 		getcertfn = func(clientHello *tls.ClientHelloInfo) (*tls.Certificate, error) {
+			s.Logger.Println("get certificate (dev)", clientHello)
 			if dom, ok := certs[clientHello.ServerName]; ok {
 				return &dom, nil
 			}
@@ -177,6 +179,7 @@ func (s *sServer) updateCertificates() *autocert.Manager {
 		s.htps = &http.Server{
 			Addr: s.Cfg.ListenAddrTLS,
 		}
+		s.htps.Handler = s
 		s.htps.TLSConfig = m.TLSConfig() //&tls.Config{GetCertificate: getcertfn}
 		s.htps.TLSConfig.GetCertificate = getcertfn
 	}
