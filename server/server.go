@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"crypto/tls"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -30,12 +31,13 @@ type Server interface {
 }
 
 type sServer struct {
-	Cfg         Config
-	trieDomains *pathtree.Trie
-	domains     map[string]*route.Route
-	Logger      *log.Logger
-	closeChan   chan os.Signal
-	htps        *http.Server
+	Cfg             Config
+	trieDomains     *pathtree.Trie
+	domains         map[string]*route.Route
+	Logger          *log.Logger
+	closeChan       chan os.Signal
+	htps            *http.Server
+	autocertDomains map[string]bool
 }
 
 func (s *sServer) GetConfig() Config {
@@ -55,6 +57,7 @@ func Default(cfg *Config) Server {
 	s.trieDomains = pathtree.NewTrie(".")
 	s.domains = make(map[string]*route.Route, 0)
 	s.Logger = log.New(os.Stderr, "[sp server] ", log.LstdFlags)
+	s.autocertDomains = make(map[string]bool)
 	return s
 }
 
@@ -108,21 +111,20 @@ func (s *sServer) Add(r route.Route) error {
 		return err
 	}
 	s.domains[r.Domain] = rr
-	s.updateCertificates()
+	if r.Autocert {
+		s.autocertDomains[r.Domain] = true
+	}
 	return nil
 }
 
-func (s *sServer) updateCertificates() *autocert.Manager {
-	autocdomains := make([]string, 0)
-	for _, v := range s.domains {
-		if v.Autocert {
-			autocdomains = append(autocdomains, v.Domain)
-		}
-	}
-	if len(autocdomains) < 1 {
-		log.Println("no autocert domains")
+func (s *sServer) autocertHostPolicy(ctx context.Context, host string) error {
+	if s.autocertDomains[host] {
 		return nil
 	}
+	return fmt.Errorf("acme/autocert: host %s NOT allowed", host)
+}
+
+func (s *sServer) setupCertificates() *autocert.Manager {
 	var m *autocert.Manager
 	cpath := "/tmp/sandpiper"
 	if s.Cfg.CachePath != "" {
@@ -131,7 +133,7 @@ func (s *sServer) updateCertificates() *autocert.Manager {
 	dcache := autocert.DirCache(cpath)
 	m = &autocert.Manager{
 		Prompt:     autocert.AcceptTOS,
-		HostPolicy: autocert.HostWhitelist(autocdomains...),
+		HostPolicy: s.autocertHostPolicy,
 		Cache:      &dcache,
 	}
 	if s.Cfg.LetsEncryptURL != "" {
@@ -151,7 +153,7 @@ func (s *sServer) updateCertificates() *autocert.Manager {
 	}
 
 	getcertfn := func(clientHello *tls.ClientHelloInfo) (*tls.Certificate, error) {
-		s.Logger.Println("get certificate", clientHello)
+		s.Logger.Println("get certificate", *clientHello)
 		if dom, ok := certs[clientHello.ServerName]; ok {
 			return &dom, nil
 		}
@@ -159,7 +161,7 @@ func (s *sServer) updateCertificates() *autocert.Manager {
 	}
 	if s.Cfg.LetsEncryptURL == "dev" {
 		getcertfn = func(clientHello *tls.ClientHelloInfo) (*tls.Certificate, error) {
-			s.Logger.Println("get certificate (dev)", clientHello)
+			s.Logger.Println("get certificate (dev)", *clientHello)
 			if dom, ok := certs[clientHello.ServerName]; ok {
 				return &dom, nil
 			}
@@ -194,7 +196,7 @@ func (s *sServer) Run() error {
 	s.htps = &http.Server{
 		Addr: s.Cfg.ListenAddrTLS,
 	}
-	autocertManager := s.updateCertificates()
+	autocertManager := s.setupCertificates()
 
 	s.htps.Handler = s
 
