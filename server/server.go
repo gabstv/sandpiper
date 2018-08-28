@@ -10,7 +10,6 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/gabstv/manners"
 	"github.com/gabstv/sandpiper/pathtree"
 	"github.com/gabstv/sandpiper/route"
 	"github.com/gabstv/sandpiper/util"
@@ -223,12 +222,14 @@ func (s *sServer) Run() error {
 	if !s.Cfg.DisableTLS {
 		go func() {
 			if s.Cfg.Graceful {
-				s.Logger.Println("Listening HTTPS (Graceful)")
-				wrapper = util.NewGracefulServer(manners.NewWithServer(s.htps))
-			} else {
-				s.Logger.Println("Listening HTTPS (Vanilla)")
-				wrapper = util.NewVanillaServer(s.htps)
+				//s.Logger.Println("Listening HTTPS (Graceful)")
+				//wrapper = util.NewGracefulServer(manners.NewWithServer(s.htps))
+				s.Logger.Println("Graceful mode disabled due to inability to resolve autocert challenges properly")
 			}
+			//} else {
+			s.Logger.Println("Listening HTTPS (Vanilla)")
+			wrapper = util.NewVanillaServer(s.htps)
+			//}
 			errc <- util.ListenAndServeTLSSNI(wrapper, certs)
 		}()
 	}
