@@ -170,13 +170,15 @@ func (s *sServer) updateCertificates() *autocert.Manager {
 		}
 	}
 	if s.htps != nil {
-		s.htps.TLSConfig = &tls.Config{GetCertificate: getcertfn}
+		s.htps.TLSConfig = m.TLSConfig() //&tls.Config{GetCertificate: getcertfn}
+		s.htps.TLSConfig.GetCertificate = getcertfn
 	} else {
 		s.Logger.Println("s.htps WAS NIL")
 		s.htps = &http.Server{
 			Addr: s.Cfg.ListenAddrTLS,
 		}
-		s.htps.TLSConfig = &tls.Config{GetCertificate: getcertfn}
+		s.htps.TLSConfig = m.TLSConfig() //&tls.Config{GetCertificate: getcertfn}
+		s.htps.TLSConfig.GetCertificate = getcertfn
 	}
 	return m
 }
