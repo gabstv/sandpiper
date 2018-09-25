@@ -10,6 +10,8 @@ import (
 	"runtime"
 	"time"
 
+	"github.com/gabstv/sandpiper/pkg/s3dircache"
+
 	"github.com/gabstv/sandpiper/pathtree"
 	"github.com/gabstv/sandpiper/route"
 	"github.com/gabstv/sandpiper/util"
@@ -129,11 +131,24 @@ func (s *sServer) setupCertificates() *autocert.Manager {
 	if s.Cfg.CachePath != "" {
 		cpath = s.Cfg.CachePath
 	}
-	dcache := autocert.DirCache(cpath)
+	var dcache autocert.Cache
+	if s.Cfg.S3Cache {
+		dcache = &s3dircache.C{
+			AwsID:     s.Cfg.S3ID,
+			AwsSecret: s.Cfg.S3Secret,
+			Region:    s.Cfg.S3Region,
+			Bucket:    s.Cfg.S3Bucket,
+			Folder:    s.Cfg.S3Folder,
+		}
+	} else {
+		dc := autocert.DirCache(cpath)
+		dcache = &dc
+	}
+
 	m = &autocert.Manager{
 		Prompt:     autocert.AcceptTOS,
 		HostPolicy: s.autocertHostPolicy,
-		Cache:      &dcache,
+		Cache:      dcache,
 	}
 	if s.Cfg.LetsEncryptURL != "" {
 		m.Client = &acme.Client{DirectoryURL: s.Cfg.LetsEncryptURL}

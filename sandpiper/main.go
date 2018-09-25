@@ -25,7 +25,7 @@ var (
 func main() {
 	stdout = colorable.NewColorableStdout()
 	stderr = colorable.NewColorableStderr()
-	fmt.Fprintln(stdout, ansi.Color("\nSANDPIPER 1.1.3\n", "green"))
+	fmt.Fprintln(stdout, ansi.Color("\nSANDPIPER 1.2.0\n", "green"))
 	// init flags
 	flag.Parse()
 	// print help if needed
@@ -67,6 +67,13 @@ func main() {
 	svCfg.APIKey = cfg.APIKey
 	svCfg.APIDomain = cfg.APIDomain
 	svCfg.APIDomainAutocert = cfg.APIDomainAutocert
+	//
+	svCfg.S3Cache = cfg.S3Cache
+	svCfg.S3ID = cfg.S3ID
+	svCfg.S3Secret = cfg.S3Secret
+	svCfg.S3Region = cfg.S3Region
+	svCfg.S3Bucket = cfg.S3Bucket
+	svCfg.S3Folder = cfg.S3Folder
 
 	// ENV VARS
 	if vv := os.Getenv("DEBUG"); vv != "" {
@@ -99,6 +106,24 @@ func main() {
 	}
 	if vv := os.Getenv("DISABLE_TLS"); vv != "" {
 		svCfg.DisableTLS = (vv == "1")
+	}
+	if vv := os.Getenv("S3_CACHE"); vv != "" {
+		svCfg.S3Cache = (vv == "1")
+	}
+	if vv := os.Getenv("S3_ID"); vv != "" {
+		svCfg.S3ID = vv
+	}
+	if vv := os.Getenv("S3_SECRET"); vv != "" {
+		svCfg.S3Secret = vv
+	}
+	if vv := os.Getenv("S3_REGION"); vv != "" {
+		svCfg.S3Region = vv
+	}
+	if vv := os.Getenv("S3_BUCKET"); vv != "" {
+		svCfg.S3Bucket = vv
+	}
+	if vv := os.Getenv("S3_FOLDER"); vv != "" {
+		svCfg.S3Folder = vv
 	}
 
 	s := server.Default(svCfg)
@@ -226,6 +251,12 @@ type Config struct {
 	APIKey            string        `yaml:"api_key"`
 	APIDomain         string        `yaml:"api_domain"`
 	APIDomainAutocert bool          `yaml:"api_domain_autocert"`
+	S3Cache           bool          `yaml:"s3_cache"`
+	S3ID              string        `yaml:"s3_id"`
+	S3Secret          string        `yaml:"s3_secret"`
+	S3Region          string        `yaml:"s3_region"`
+	S3Bucket          string        `yaml:"s3_bucket"`
+	S3Folder          string        `yaml:"s3_folder"`
 }
 
 // ConfigRoute represents a domain route

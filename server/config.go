@@ -21,4 +21,11 @@ type Config struct {
 	// If not empty, APIDomain will spin a domain/route for the API
 	APIDomain         string
 	APIDomainAutocert bool
+	//
+	S3Cache  bool
+	S3ID     string
+	S3Secret string
+	S3Region string
+	S3Bucket string
+	S3Folder string
 }
