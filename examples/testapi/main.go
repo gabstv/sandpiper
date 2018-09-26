@@ -3,9 +3,9 @@ package main
 import (
 	"net/http"
 
+	"github.com/gabstv/sandpiper/pkg/util"
 	"github.com/gabstv/sandpiper/route"
 	"github.com/gabstv/sandpiper/server"
-	"github.com/gabstv/sandpiper/util"
 	"github.com/gin-gonic/gin"
 )
 

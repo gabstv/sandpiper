@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/gabstv/sandpiper/route"
-	"github.com/gabstv/sandpiper/util"
+	"github.com/gabstv/sandpiper/pkg/util"
 )
 
 func testRequest(host, method, path string) (respRec *httptest.ResponseRecorder, r *http.Request) {

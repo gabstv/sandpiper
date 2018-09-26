@@ -1,14 +1,15 @@
 package server
 
 import (
-	"github.com/gabstv/sandpiper/route"
-	"github.com/gabstv/sandpiper/util"
-	"github.com/gorilla/websocket"
 	"net"
 	"net/http"
 	"net/url"
 	"testing"
 	"time"
+
+	"github.com/gabstv/sandpiper/pkg/util"
+	"github.com/gabstv/sandpiper/route"
+	"github.com/gorilla/websocket"
 )
 
 type wsTestServer struct {

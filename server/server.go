@@ -10,11 +10,10 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/gabstv/sandpiper/pkg/s3dircache"
-
 	"github.com/gabstv/sandpiper/pathtree"
+	"github.com/gabstv/sandpiper/pkg/s3dircache"
+	"github.com/gabstv/sandpiper/pkg/util"
 	"github.com/gabstv/sandpiper/route"
-	"github.com/gabstv/sandpiper/util"
 	"golang.org/x/crypto/acme"
 	"golang.org/x/crypto/acme/autocert"
 )

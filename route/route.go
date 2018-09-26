@@ -7,7 +7,7 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/gabstv/sandpiper/util"
+	"github.com/gabstv/sandpiper/pkg/util"
 )
 
 // ConnType specifies the connection type

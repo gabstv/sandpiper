@@ -10,7 +10,7 @@ import (
 
 	"github.com/gabstv/sandpiper/route"
 	"github.com/gabstv/sandpiper/server"
-	"github.com/gabstv/sandpiper/util"
+	"github.com/gabstv/sandpiper/pkg/util"
 	"github.com/mattn/go-colorable"
 	"github.com/mgutz/ansi"
 	"gopkg.in/yaml.v2"
