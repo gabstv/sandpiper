@@ -8,7 +8,7 @@ Sandpiper is an open source websocket-aware reverse proxy server.
 To install from source (you need to have Go 1.4+ installed):
 
 ```go
-go get github.com/gabstv/sandpiper/sandpiper
+go get github.com/gabstv/sandpiper/cmd/sandpiper
 ```
 
 ## Setup

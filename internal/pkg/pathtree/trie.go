@@ -3,8 +3,9 @@ package pathtree
 import (
 	"bytes"
 	"errors"
-	"github.com/gabstv/sandpiper/route"
 	"strings"
+
+	"github.com/gabstv/sandpiper/internal/pkg/route"
 )
 
 type Trie struct {

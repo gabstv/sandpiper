@@ -8,7 +8,7 @@ import (
 
 	"github.com/gabstv/freeport"
 	"github.com/gabstv/sandpiper/api"
-	"github.com/gabstv/sandpiper/route"
+	"github.com/gabstv/sandpiper/internal/pkg/route"
 	"github.com/gin-gonic/gin"
 )
 

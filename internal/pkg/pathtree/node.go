@@ -2,7 +2,8 @@ package pathtree
 
 import (
 	"bytes"
-	"github.com/gabstv/sandpiper/route"
+
+	"github.com/gabstv/sandpiper/internal/pkg/route"
 )
 
 type Node struct {

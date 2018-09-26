@@ -9,9 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gabstv/sandpiper/route"
-
 	"github.com/gabstv/freeport"
+	"github.com/gabstv/sandpiper/internal/pkg/route"
 )
 
 type delayTestServer struct {

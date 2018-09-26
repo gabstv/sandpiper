@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/gabstv/sandpiper/route"
+	"github.com/gabstv/sandpiper/internal/pkg/route"
 )
 
 // Client is the API client.

@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gabstv/sandpiper/route"
+	"github.com/gabstv/sandpiper/internal/pkg/route"
 	"github.com/gabstv/sandpiper/pkg/util"
 )
 
