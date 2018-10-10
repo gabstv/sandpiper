@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/signal"
 
+	"github.com/gabstv/sandpiper/internal/pkg/envs"
 	"github.com/gabstv/sandpiper/internal/pkg/route"
 	"github.com/gabstv/sandpiper/pkg/server"
 	"github.com/gabstv/sandpiper/pkg/util"
@@ -76,16 +77,16 @@ func main() {
 	svCfg.S3Folder = cfg.S3Folder
 
 	// ENV VARS
-	if vv := os.Getenv("DEBUG"); vv != "" {
-		svCfg.Debug = (vv == "1")
+	if dbg, ok := envs.Debug(); ok {
+		svCfg.Debug = dbg
 	}
-	if vv := os.Getenv("LISTEN"); vv != "" {
+	if vv := envs.Listen(); vv != "" {
 		svCfg.ListenAddr = vv
 	}
-	if vv := os.Getenv("LISTEN_TLS"); vv != "" {
+	if vv := envs.ListenTLS(); vv != "" {
 		svCfg.ListenAddrTLS = vv
 	}
-	if vv := os.Getenv("FALLBACK_DOMAIN"); vv != "" {
+	if vv := envs.FallbackDomain(); vv != "" {
 		svCfg.FallbackDomain = vv
 	}
 
@@ -149,6 +150,7 @@ func main() {
 		r.AuthKey = v.AuthKey
 		r.AuthValue = v.AuthValue
 		r.ForceHTTPS = v.ForceHTTPS
+		r.Server.LoadBalancer = v.LoadBalancer
 		err = s.Add(r)
 		if err != nil {
 			fmt.Fprintf(stderr, "\nERROR: Could not add route %v\n%v\n",
@@ -233,6 +235,9 @@ func unpackConnType(input string) (route.ConnType, bool) {
 	if input == "REDIRECT" {
 		return route.REDIRECT, true
 	}
+	if input == "LOAD_BALANCER" {
+		return route.LOAD_BALANCER, true
+	}
 	return route.HTTP, false
 }
 
@@ -261,15 +266,16 @@ type Config struct {
 
 // ConfigRoute represents a domain route
 type ConfigRoute struct {
-	Domain                 string        `yaml:"domain"`
-	OutgoingServerConnType string        `yaml:"out_conn_type"`
-	OutgoingServerAddress  string        `yaml:"out_addr"`
-	TLSCertFile            string        `yaml:"tls_cert_file"`
-	TLSKeyFile             string        `yaml:"tls_key_file"`
-	Autocert               bool          `yaml:"autocert"`
-	Websockets             util.WsConfig `yaml:"websockets"`
-	AuthMode               string        `yaml:"auth_mode"`
-	AuthKey                string        `yaml:"auth_key"`
-	AuthValue              string        `yaml:"auth_value"`
-	ForceHTTPS             bool          `yaml:"force_https"`
+	Domain                 string                    `yaml:"domain"`
+	OutgoingServerConnType string                    `yaml:"out_conn_type"`
+	OutgoingServerAddress  string                    `yaml:"out_addr"`
+	TLSCertFile            string                    `yaml:"tls_cert_file"`
+	TLSKeyFile             string                    `yaml:"tls_key_file"`
+	Autocert               bool                      `yaml:"autocert"`
+	Websockets             util.WsConfig             `yaml:"websockets"`
+	AuthMode               string                    `yaml:"auth_mode"`
+	AuthKey                string                    `yaml:"auth_key"`
+	AuthValue              string                    `yaml:"auth_value"`
+	ForceHTTPS             bool                      `yaml:"force_https"`
+	LoadBalancer           *route.LoadBalancerConfig `yaml:"load_balancer"`
 }

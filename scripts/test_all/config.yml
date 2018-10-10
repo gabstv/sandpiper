@@ -1,1 +1,22 @@
-# TODO
+debug: true
+
+listen_addr: :9010
+disable_tls: true
+routes:
+  -
+    domain:        alpha.sandpiper:9010
+    out_conn_type: HTTP
+    out_addr:      localhost:9001
+  -
+    domain:        bravo.sandpiper:9010
+    out_conn_type: HTTP
+    out_addr:      localhost:9002
+  -
+    domain:        main.sandpiper:9010
+    out_conn_type: LOAD_BALANCER
+    load_balancer:
+      targets:
+        -
+          path: localhost:9001
+        -
+          path: localhost:9002

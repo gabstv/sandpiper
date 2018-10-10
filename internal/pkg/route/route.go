@@ -22,24 +22,34 @@ const (
 	HTTPS_SKIP_VERIFY ConnType = 2
 	// REDIRECT - Redirect to the provided address
 	REDIRECT ConnType = 3
+	// LOAD_BALANCER - Load balancer mode
+	LOAD_BALANCER ConnType = 4
 )
 
+var defaultWebsocks = util.WsConfig{
+	Enabled:             true,
+	ReadBufferSize:      4096,
+	WriteBufferSize:     4096,
+	ReadDeadlineSeconds: time.Second * 60,
+}
+
 type Route struct {
-	Domain      string           `json:"domain"`
-	Server      RouteServer      `json:"server"` //TODO: maybe support load balancing in the future
-	Certificate util.Certificate `json:"certificate"`
-	Autocert    bool             `json:"autocert"`
-	WsCFG       util.WsConfig    `json:"wscfg"`
+	Domain      string           `json:"domain" yaml:"domain"`
+	Server      RouteServer      `json:"server" yaml:"server"`
+	Certificate util.Certificate `json:"certificate" yaml:"certificate"`
+	Autocert    bool             `json:"autocert" yaml:"autocert"`
+	WsCFG       util.WsConfig    `json:"wscfg" yaml:"wscfg"`
 	fn          func(w http.ResponseWriter, r *http.Request)
-	AuthMode    string `json:"auth_mode"`
-	AuthKey     string `json:"auth_key"`
-	AuthValue   string `json:"auth_value"`
-	ForceHTTPS  bool   `json:"force_https"`
+	AuthMode    string `json:"auth_mode" yaml:"auth_mode"`
+	AuthKey     string `json:"auth_key" yaml:"auth_key"`
+	AuthValue   string `json:"auth_value" yaml:"auth_value"`
+	ForceHTTPS  bool   `json:"force_https" yaml:"force_https"`
 }
 
 type RouteServer struct {
-	OutConnType ConnType `json:"out_conn_type"`
-	OutAddress  string   `json:"out_address"`
+	OutConnType  ConnType            `json:"out_conn_type" yaml:"out_conn_type"`
+	OutAddress   string              `json:"out_address,omitempty" yaml:"out_address"`
+	LoadBalancer *LoadBalancerConfig `json:"load_balancer,omitempty" yaml:"load_balancer"`
 }
 
 func (rs *RouteServer) URL() *url.URL {
@@ -72,6 +82,27 @@ func (rt *Route) ReverseProxy(w http.ResponseWriter, r *http.Request) {
 				}
 				url2 := base.ResolveReference(url1)
 				http.Redirect(w, r, url2.String(), http.StatusPermanentRedirect)
+			}
+		} else if rt.Server.OutConnType == LOAD_BALANCER {
+			if rt.Server.LoadBalancer == nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				w.Write([]byte("could not serve (load balancer configuration is nil)"))
+				return
+			}
+			lblb := &loadBalancer{}
+			lblb.Targets = make([]*loadBalancerTarget, 0)
+			for _, v := range rt.Server.LoadBalancer.Targets {
+				lbt := &loadBalancerTarget{
+					Path:        v.Path,
+					HealthScore: 100,
+					Count:       0,
+				}
+				rp := util.NewSingleHostReverseProxy(lbt.URL(), defaultWebsocks)
+				lbt.Proxy = rp
+				lblb.Targets = append(lblb.Targets, lbt)
+			}
+			rt.fn = func(w http.ResponseWriter, r *http.Request) {
+				lblb.ServeHTTP(w, r)
 			}
 		} else {
 			rp := buildReverseProxy(rt)
