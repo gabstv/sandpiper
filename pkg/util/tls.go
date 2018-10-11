@@ -5,6 +5,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/pkg/errors"
@@ -113,7 +114,8 @@ func ListenAndServeTLSSNI(server *ServerWrapper, certs []Certificate) error {
 		var err error
 		config.Certificates[k], err = tls.LoadX509KeyPair(v.CertFile, v.KeyFile)
 		if err != nil {
-			return errors.Wrapf(err, "tls.LoadX509KeyPair(%q, %q)", v.CertFile, v.KeyFile)
+			wdir, _ := os.Getwd()
+			return errors.Wrapf(err, "[tls.LoadX509KeyPair(%q, %q) wd: %s]", v.CertFile, v.KeyFile, wdir)
 		}
 	}
 
