@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/pkg/errors"
+
 	"github.com/gabstv/manners"
 )
 
@@ -111,7 +113,7 @@ func ListenAndServeTLSSNI(server *ServerWrapper, certs []Certificate) error {
 		var err error
 		config.Certificates[k], err = tls.LoadX509KeyPair(v.CertFile, v.KeyFile)
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "tls.LoadX509KeyPair(%q, %q)", v.CertFile, v.KeyFile)
 		}
 	}
 
