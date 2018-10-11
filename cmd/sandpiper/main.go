@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/signal"
+	"strings"
 
 	"github.com/gabstv/sandpiper/internal/pkg/envs"
 	"github.com/gabstv/sandpiper/internal/pkg/route"
@@ -151,16 +152,33 @@ func main() {
 		r.AuthValue = v.AuthValue
 		r.ForceHTTPS = v.ForceHTTPS
 		r.Server.LoadBalancer = v.LoadBalancer
-		err = s.Add(r)
-		if err != nil {
-			fmt.Fprintf(stderr, "\nERROR: Could not add route %v\n%v\n",
-				ansi.Color(v.Domain, "yellow"),
-				ansi.Color(err.Error(), "red"))
-			os.Exit(1)
+		if v.Domain == "" && v.Domains != nil && len(v.Domains) > 0 {
+			for _, dname := range v.Domains {
+				r2 := r
+				r2.Domain = dname
+				err = s.Add(r2)
+				if err != nil {
+					fmt.Fprintf(stderr, "\nERROR: Could not add route %v\n%v\n",
+						ansi.Color(dname, "yellow"),
+						ansi.Color(err.Error(), "red"))
+					os.Exit(1)
+				}
+			}
+			fmt.Fprintf(stdout, "%v: %v\n",
+				ansi.Color("Domain added", "green"),
+				strings.Join(v.Domains, " "))
+		} else {
+			err = s.Add(r)
+			if err != nil {
+				fmt.Fprintf(stderr, "\nERROR: Could not add route %v\n%v\n",
+					ansi.Color(v.Domain, "yellow"),
+					ansi.Color(err.Error(), "red"))
+				os.Exit(1)
+			}
+			fmt.Fprintf(stdout, "%v: %v\n",
+				ansi.Color("Domain added", "green"),
+				v.Domain)
 		}
-		fmt.Fprintf(stdout, "%v: %v\n",
-			ansi.Color("Domain added", "green"),
-			v.Domain)
 	}
 	//
 	if cfg.Debug {
@@ -267,6 +285,7 @@ type Config struct {
 // ConfigRoute represents a domain route
 type ConfigRoute struct {
 	Domain                 string                    `yaml:"domain"`
+	Domains                []string                  `yaml:"domains"`
 	OutgoingServerConnType string                    `yaml:"out_conn_type"`
 	OutgoingServerAddress  string                    `yaml:"out_addr"`
 	TLSCertFile            string                    `yaml:"tls_cert_file"`
