@@ -179,7 +179,7 @@ func main() {
 	//
 	err = s.Run()
 	if err != nil {
-		fmt.Fprintf(stderr, "ERROR: %v\n",
+		fmt.Fprintf(stderr, "ERROR (s.Run()): %v\n",
 			ansi.Color(err.Error(), "red"))
 		os.Exit(1)
 	}

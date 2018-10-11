@@ -14,6 +14,7 @@ import (
 	"github.com/gabstv/sandpiper/internal/pkg/route"
 	"github.com/gabstv/sandpiper/pkg/s3dircache"
 	"github.com/gabstv/sandpiper/pkg/util"
+	"github.com/pkg/errors"
 	"golang.org/x/crypto/acme"
 	"golang.org/x/crypto/acme/autocert"
 )
@@ -219,10 +220,16 @@ func (s *sServer) Run() error {
 			if autocertManager == nil {
 				s.Logger.Println("autocertManager is nil")
 			}
-			errc <- http.ListenAndServe(s.Cfg.ListenAddr, s)
+			lserr := http.ListenAndServe(s.Cfg.ListenAddr, s)
+			if lserr != nil {
+				errc <- errors.Wrapf(lserr, "[default] http.ListenAndServe(%q)", s.Cfg.ListenAddr)
+			}
 		} else {
 			s.Logger.Println("Listening accepting HTTP requests to the SNI challenge")
-			errc <- http.ListenAndServe(s.Cfg.ListenAddr, autocertManager.HTTPHandler(s))
+			lserr := http.ListenAndServe(s.Cfg.ListenAddr, autocertManager.HTTPHandler(s))
+			if lserr != nil {
+				errc <- errors.Wrapf(lserr, "[default] http.ListenAndServe(%q)", s.Cfg.ListenAddr)
+			}
 		}
 	}()
 
@@ -244,7 +251,10 @@ func (s *sServer) Run() error {
 			s.Logger.Println("Listening HTTPS (Vanilla)")
 			wrapper = util.NewVanillaServer(s.htps)
 			//}
-			errc <- util.ListenAndServeTLSSNI(wrapper, certs)
+			lserr := util.ListenAndServeTLSSNI(wrapper, certs)
+			if lserr != nil {
+				errc <- errors.Wrap(lserr, "util.ListenAndServeTLSSNI")
+			}
 		}()
 	}
 	//
