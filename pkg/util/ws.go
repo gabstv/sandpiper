@@ -1,11 +1,10 @@
 package util
 
 import (
-	"log"
-	"net/http"
-	//"net/http/httputil"
 	"io"
+	"log"
 	"net"
+	"net/http"
 	"net/url"
 	"strings"
 	"sync"
@@ -14,6 +13,7 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+// DEBUG will print extra information to stdout
 var DEBUG = false
 
 func dlogln(stuff ...interface{}) {
@@ -52,6 +52,7 @@ type ReverseProxy struct {
 	WsCFG WsConfig
 }
 
+// WsConfig websockets configuration
 type WsConfig struct {
 	Enabled             bool          `yaml:"enabled"`
 	ReadBufferSize      int           `yaml:"read_buffer_size"`
@@ -68,9 +69,16 @@ type wsbridge struct {
 func (b *wsbridge) EndpointLoopRead() {
 	defer func() {
 		//ticker.Stop()
-		b.proxy2endpoint.Close()
-		b.client2proxy.Close()
+		if b.proxy2endpoint != nil {
+			b.proxy2endpoint.Close()
+		}
+		if b.client2proxy != nil {
+			b.client2proxy.Close()
+		}
 	}()
+	if b.proxy2endpoint == nil {
+		return
+	}
 	b.proxy2endpoint.SetReadLimit(int64(b.rp.WsCFG.ReadBufferSize))
 	b.proxy2endpoint.SetReadDeadline(time.Now().Add(b.rp.WsCFG.ReadDeadlineSeconds))
 	b.proxy2endpoint.SetPongHandler(func(string) error {
@@ -79,10 +87,16 @@ func (b *wsbridge) EndpointLoopRead() {
 		return nil
 	})
 	for {
+		if b.proxy2endpoint == nil {
+			return
+		}
 		b.proxy2endpoint.SetReadDeadline(time.Now().Add(b.rp.WsCFG.ReadDeadlineSeconds))
 		b.proxy2endpoint.SetWriteDeadline(time.Now().Add(b.rp.WsCFG.ReadDeadlineSeconds))
 		mtype, rdr, err := b.proxy2endpoint.NextReader()
 		if err != nil {
+			return
+		}
+		if b.client2proxy == nil {
 			return
 		}
 		wc, err := b.client2proxy.NextWriter(mtype)
@@ -99,9 +113,16 @@ func (b *wsbridge) ClientLoopRead() {
 	//ticker := time.NewTicker(time.Second * 50)
 	defer func() {
 		//ticker.Stop()
-		b.proxy2endpoint.Close()
-		b.client2proxy.Close()
+		if b.proxy2endpoint != nil {
+			b.proxy2endpoint.Close()
+		}
+		if b.client2proxy != nil {
+			b.client2proxy.Close()
+		}
 	}()
+	if b.client2proxy == nil {
+		return
+	}
 	b.client2proxy.SetReadLimit(int64(b.rp.WsCFG.ReadBufferSize))
 	b.client2proxy.SetReadDeadline(time.Now().Add(b.rp.WsCFG.ReadDeadlineSeconds))
 	b.client2proxy.SetPongHandler(func(string) error {
@@ -110,10 +131,16 @@ func (b *wsbridge) ClientLoopRead() {
 		return nil
 	})
 	for {
+		if b.client2proxy == nil {
+			return
+		}
 		b.client2proxy.SetReadDeadline(time.Now().Add(b.rp.WsCFG.ReadDeadlineSeconds))
 		b.client2proxy.SetWriteDeadline(time.Now().Add(b.rp.WsCFG.ReadDeadlineSeconds))
 		mtype, rdr, err := b.client2proxy.NextReader()
 		if err != nil {
+			return
+		}
+		if b.proxy2endpoint == nil {
 			return
 		}
 		wc, err := b.proxy2endpoint.NextWriter(mtype)
