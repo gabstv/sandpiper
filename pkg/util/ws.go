@@ -255,6 +255,7 @@ func (p *ReverseProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		aa = "s"
 	}
 	outreq.Header.Set("X-Forwarded-Proto", req.URL.Scheme+aa)
+	outreq.Header.Set("X-Forwarded-Host", req.Host)
 
 	if useWebsockets {
 		// connect to the proxied server and asks for websockets!
