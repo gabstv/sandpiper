@@ -28,4 +28,6 @@ type Config struct {
 	S3Region string
 	S3Bucket string
 	S3Folder string
+	//
+	AutocertAll bool
 }

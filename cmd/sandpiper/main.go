@@ -13,9 +13,9 @@ import (
 	"github.com/gabstv/sandpiper/internal/pkg/route"
 	"github.com/gabstv/sandpiper/pkg/server"
 	"github.com/gabstv/sandpiper/pkg/util"
-	"github.com/mattn/go-colorable"
+	colorable "github.com/mattn/go-colorable"
 	"github.com/mgutz/ansi"
-	"gopkg.in/yaml.v2"
+	yaml "gopkg.in/yaml.v2"
 )
 
 var (
@@ -76,6 +76,7 @@ func main() {
 	svCfg.S3Region = cfg.S3Region
 	svCfg.S3Bucket = cfg.S3Bucket
 	svCfg.S3Folder = cfg.S3Folder
+	svCfg.AutocertAll = cfg.AutocertAll
 
 	// ENV VARS
 	if dbg, ok := envs.Debug(); ok {
@@ -126,6 +127,9 @@ func main() {
 	}
 	if vv := os.Getenv("S3_FOLDER"); vv != "" {
 		svCfg.S3Folder = vv
+	}
+	if vv := os.Getenv("AUTOCERT_ALL"); vv != "" {
+		svCfg.AutocertAll = (vv == "1")
 	}
 
 	s := server.Default(svCfg)
@@ -280,6 +284,7 @@ type Config struct {
 	S3Region          string        `yaml:"s3_region"`
 	S3Bucket          string        `yaml:"s3_bucket"`
 	S3Folder          string        `yaml:"s3_folder"`
+	AutocertAll       bool          `yaml:"autocert_all"`
 }
 
 // ConfigRoute represents a domain route

@@ -36,6 +36,7 @@ listen_addr:     :8080
 listen_addr_tls: :8443
 graceful:        true           # graceful shutdown (on interrupt)
 cache_path:      /tmp/sandpiper # a place to store autocerts
+autocert_all:    true           # autocert any domain (don't use whitelist)
 routes:
   - 
     domain:        example.com

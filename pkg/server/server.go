@@ -122,6 +122,9 @@ func (s *sServer) autocertHostPolicy(ctx context.Context, host string) error {
 	if s.autocertDomains[host] {
 		return nil
 	}
+	if s.Cfg.AutocertAll {
+		return nil
+	}
 	return fmt.Errorf("acme/autocert: host %s NOT allowed", host)
 }
 
