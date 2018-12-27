@@ -123,6 +123,7 @@ func (s *sServer) autocertHostPolicy(ctx context.Context, host string) error {
 		return nil
 	}
 	if s.Cfg.AutocertAll {
+		s.Logger.Println("autocertHostPolicy AutocertAll:", host)
 		return nil
 	}
 	return fmt.Errorf("acme/autocert: host %s NOT allowed", host)
