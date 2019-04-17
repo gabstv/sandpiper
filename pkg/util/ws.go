@@ -58,6 +58,7 @@ type WsConfig struct {
 	ReadBufferSize      int           `yaml:"read_buffer_size"`
 	WriteBufferSize     int           `yaml:"write_buffer_size"`
 	ReadDeadlineSeconds time.Duration `yaml:"read_deadline_seconds"`
+	EnableCompression   bool          `yaml:"enable_compression"`
 }
 
 type wsbridge struct {
@@ -281,8 +282,12 @@ func (p *ReverseProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		}
 
 		upgrader := websocket.Upgrader{
-			ReadBufferSize:  p.WsCFG.ReadBufferSize,
-			WriteBufferSize: p.WsCFG.WriteBufferSize,
+			ReadBufferSize:    p.WsCFG.ReadBufferSize,
+			WriteBufferSize:   p.WsCFG.WriteBufferSize,
+			EnableCompression: p.WsCFG.EnableCompression,
+			CheckOrigin: func(r *http.Request) bool {
+				return true
+			},
 		}
 		//req.Header.Set("Connection", "Upgrade")
 		//req.Header.Set("Upgrade", "websocket")

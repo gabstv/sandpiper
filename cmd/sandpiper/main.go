@@ -27,7 +27,7 @@ var (
 func main() {
 	stdout = colorable.NewColorableStdout()
 	stderr = colorable.NewColorableStderr()
-	fmt.Fprintln(stdout, ansi.Color("\nSANDPIPER 1.2.1\n", "green"))
+	fmt.Fprintln(stdout, ansi.Color("\nSANDPIPER 1.3.0\n", "green"))
 	// init flags
 	flag.Parse()
 	// print help if needed
