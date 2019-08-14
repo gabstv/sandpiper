@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/signal"
+	"strconv"
 	"strings"
 
 	"github.com/gabstv/sandpiper/internal/pkg/envs"
@@ -182,6 +183,64 @@ func main() {
 			fmt.Fprintf(stdout, "%v: %v\n",
 				ansi.Color("Domain added", "green"),
 				v.Domain)
+		}
+	}
+	// ROUTES BY ENV VARS
+	if evroutes := os.Getenv("ENV_ROUTES"); evroutes != "" {
+		evn, _ := strconv.Atoi(evroutes)
+		for i := 0; i < evn; i++ {
+			if v := os.Getenv(fmt.Sprintf("R%d_DOMAIN", i)); v == "" {
+				fmt.Fprintf(stderr, "\nERROR: Could not add env route %v\n%v\n",
+					ansi.Color(strconv.Itoa(i), "yellow"),
+					ansi.Color(fmt.Sprintf("invalid R%d_DOMAIN var", i), "red"))
+				continue
+			}
+			r := route.Route{}
+			if v := os.Getenv(fmt.Sprintf("R%d_OUT_CONN_TYPE", i)); v != "" {
+				r.Server.OutConnType = route.ParseConnType(v)
+			}
+			if v := os.Getenv(fmt.Sprintf("R%d_OUT_ADDR", i)); v != "" {
+				r.Server.OutAddress = v
+			}
+			if v := os.Getenv(fmt.Sprintf("R%d_TLS_CERT_FILE", i)); v != "" {
+				r.Certificate.CertFile = v
+			}
+			if v := os.Getenv(fmt.Sprintf("R%d_TLS_KEY_FILE", i)); v != "" {
+				r.Certificate.KeyFile = v
+			}
+			if v := os.Getenv(fmt.Sprintf("R%d_AUTOCERT", i)); v == "1" || v == "true" || v == "TRUE" {
+				r.Autocert = true
+			}
+			if v := os.Getenv(fmt.Sprintf("R%d_AUTH_MODE", i)); v != "" {
+				r.AuthMode = v
+			}
+			if v := os.Getenv(fmt.Sprintf("R%d_AUTH_KEY", i)); v != "" {
+				r.AuthKey = v
+			}
+			if v := os.Getenv(fmt.Sprintf("R%d_AUTH_VALUE", i)); v != "" {
+				r.AuthValue = v
+			}
+			if v := os.Getenv(fmt.Sprintf("R%d_FORCE_HTTPS", i)); v == "1" || v == "true" || v == "TRUE" {
+				r.ForceHTTPS = true
+			}
+			r.WsCFG.Enabled = true
+			r.WsCFG.ReadBufferSize = 1024 * 8
+			r.WsCFG.WriteBufferSize = 1024 * 8
+
+			if v := os.Getenv(fmt.Sprintf("R%d_DOMAIN", i)); v != "" {
+				dms := strings.Split(v, ";")
+				for _, kv := range dms {
+					r2 := r
+					r2.Domain = strings.TrimSpace(kv)
+					err = s.Add(r2)
+					if err != nil {
+						fmt.Fprintf(stderr, "\nERROR: Could not add route %v\n%v\n",
+							ansi.Color(kv, "yellow"),
+							ansi.Color(err.Error(), "red"))
+						os.Exit(1)
+					}
+				}
+			}
 		}
 	}
 	//

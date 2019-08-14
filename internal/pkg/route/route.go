@@ -5,6 +5,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/gabstv/sandpiper/pkg/util"
@@ -25,6 +26,22 @@ const (
 	// LOAD_BALANCER - Load balancer mode
 	LOAD_BALANCER ConnType = 4
 )
+
+func ParseConnType(v string) ConnType {
+	switch strings.ToUpper(v) {
+	case "HTTP", "0":
+		return HTTP
+	case "HTTPS_VERIFY", "HTTPS", "1":
+		return HTTPS_VERIFY
+	case "HTTPS_SKIP_VERIFY", "2":
+		return HTTPS_SKIP_VERIFY
+	case "REDIRECT", "3":
+		return REDIRECT
+	case "LOAD_BALANCER", "4":
+		return LOAD_BALANCER
+	}
+	return HTTP
+}
 
 var defaultWebsocks = util.WsConfig{
 	Enabled:             true,
