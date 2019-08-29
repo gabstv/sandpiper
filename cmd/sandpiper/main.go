@@ -28,7 +28,7 @@ var (
 func main() {
 	stdout = colorable.NewColorableStdout()
 	stderr = colorable.NewColorableStderr()
-	fmt.Fprintln(stdout, ansi.Color("\nSANDPIPER 1.4.0\n", "green"))
+	fmt.Fprintln(stdout, ansi.Color("\nSANDPIPER 1.4.1\n", "green"))
 	// init flags
 	flag.Parse()
 	// print help if needed
@@ -131,6 +131,9 @@ func main() {
 	}
 	if vv := os.Getenv("AUTOCERT_ALL"); vv != "" {
 		svCfg.AutocertAll = (vv == "1")
+	}
+	if vv := os.Getenv("FALLBACK_DOMAIN"); vv != "" {
+		svCfg.FallbackDomain = vv
 	}
 
 	s := server.Default(svCfg)
