@@ -160,6 +160,7 @@ func main() {
 		r.AuthValue = v.AuthValue
 		r.ForceHTTPS = v.ForceHTTPS
 		r.Server.LoadBalancer = v.LoadBalancer
+		r.FlushInterval = v.FlushInterval
 		if v.Domain == "" && v.Domains != nil && len(v.Domains) > 0 {
 			for _, dname := range v.Domains {
 				r2 := r
@@ -225,6 +226,9 @@ func main() {
 			}
 			if v := os.Getenv(fmt.Sprintf("R%d_FORCE_HTTPS", i)); v == "1" || v == "true" || v == "TRUE" {
 				r.ForceHTTPS = true
+			}
+			if v := os.Getenv(fmt.Sprintf("R%d_FLUSH_INTERVAL", i)); v != "" {
+				r.FlushInterval, _ = strconv.Atoi(v)
 			}
 			r.WsCFG.Enabled = true
 			r.WsCFG.ReadBufferSize = 1024 * 8
@@ -364,4 +368,5 @@ type ConfigRoute struct {
 	AuthValue              string                    `yaml:"auth_value"`
 	ForceHTTPS             bool                      `yaml:"force_https"`
 	LoadBalancer           *route.LoadBalancerConfig `yaml:"load_balancer"`
+	FlushInterval          int                       `yaml:"flush_interval"`
 }

@@ -179,7 +179,7 @@ var hopHeaders = []string{
 // URLs to the scheme, host, and base path provided in target. If the
 // target's path is "/base" and the incoming request was for "/dir",
 // the target request will be for /base/dir.
-func NewSingleHostReverseProxy(target *url.URL, wsconfig WsConfig) *ReverseProxy {
+func NewSingleHostReverseProxy(target *url.URL, wsconfig WsConfig, flushInterval time.Duration) *ReverseProxy {
 	targetQuery := target.RawQuery
 	director := func(req *http.Request) {
 		req.URL.Scheme = target.Scheme
@@ -191,7 +191,7 @@ func NewSingleHostReverseProxy(target *url.URL, wsconfig WsConfig) *ReverseProxy
 			req.URL.RawQuery = targetQuery + "&" + req.URL.RawQuery
 		}
 	}
-	return &ReverseProxy{Director: director, WsCFG: wsconfig}
+	return &ReverseProxy{Director: director, WsCFG: wsconfig, FlushInterval: flushInterval}
 }
 
 func (p *ReverseProxy) ServeHTTP(rw http.ResponseWriter, req *http.Request) {

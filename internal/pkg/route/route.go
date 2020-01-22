@@ -51,16 +51,17 @@ var defaultWebsocks = util.WsConfig{
 }
 
 type Route struct {
-	Domain      string           `json:"domain" yaml:"domain"`
-	Server      RouteServer      `json:"server" yaml:"server"`
-	Certificate util.Certificate `json:"certificate" yaml:"certificate"`
-	Autocert    bool             `json:"autocert" yaml:"autocert"`
-	WsCFG       util.WsConfig    `json:"wscfg" yaml:"wscfg"`
-	fn          func(w http.ResponseWriter, r *http.Request)
-	AuthMode    string `json:"auth_mode" yaml:"auth_mode"`
-	AuthKey     string `json:"auth_key" yaml:"auth_key"`
-	AuthValue   string `json:"auth_value" yaml:"auth_value"`
-	ForceHTTPS  bool   `json:"force_https" yaml:"force_https"`
+	Domain        string           `json:"domain" yaml:"domain"`
+	Server        RouteServer      `json:"server" yaml:"server"`
+	Certificate   util.Certificate `json:"certificate" yaml:"certificate"`
+	Autocert      bool             `json:"autocert" yaml:"autocert"`
+	WsCFG         util.WsConfig    `json:"wscfg" yaml:"wscfg"`
+	fn            func(w http.ResponseWriter, r *http.Request)
+	AuthMode      string `json:"auth_mode" yaml:"auth_mode"`
+	AuthKey       string `json:"auth_key" yaml:"auth_key"`
+	AuthValue     string `json:"auth_value" yaml:"auth_value"`
+	ForceHTTPS    bool   `json:"force_https" yaml:"force_https"`
+	FlushInterval int    `json:"flush_interval" yaml:"flush_interval"`
 }
 
 type RouteServer struct {
@@ -114,7 +115,7 @@ func (rt *Route) ReverseProxy(w http.ResponseWriter, r *http.Request) {
 					HealthScore: 100,
 					Count:       0,
 				}
-				rp := util.NewSingleHostReverseProxy(lbt.URL(), defaultWebsocks)
+				rp := util.NewSingleHostReverseProxy(lbt.URL(), defaultWebsocks, time.Second)
 				lbt.Proxy = rp
 				lblb.Targets = append(lblb.Targets, lbt)
 			}
@@ -145,7 +146,7 @@ func (rt *Route) ReverseProxy(w http.ResponseWriter, r *http.Request) {
 }
 
 func buildReverseProxy(rt *Route) *util.ReverseProxy {
-	rp := util.NewSingleHostReverseProxy(rt.Server.URL(), rt.WsCFG)
+	rp := util.NewSingleHostReverseProxy(rt.Server.URL(), rt.WsCFG, time.Duration(rt.FlushInterval)*time.Second)
 	if rt.Server.OutConnType == HTTPS_SKIP_VERIFY {
 		rp.Transport = &http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
