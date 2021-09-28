@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"os"
 	"runtime"
-	"time"
 
 	"github.com/gabstv/sandpiper/internal/pkg/pathtree"
 	"github.com/gabstv/sandpiper/internal/pkg/route"
@@ -94,19 +93,9 @@ func (s *sServer) startAPI(ctx context.Context) error {
 func (s *sServer) Add(r route.Route) error {
 	rr := &route.Route{}
 	*rr = r
-	if rr.WsCFG.ReadBufferSize == 0 {
-		rr.WsCFG.ReadBufferSize = 2048
-	}
-	if rr.WsCFG.WriteBufferSize == 0 {
-		rr.WsCFG.WriteBufferSize = 2048
-	}
-	if rr.WsCFG.ReadDeadlineSeconds == 0 {
-		rr.WsCFG.ReadDeadlineSeconds = time.Second * 60
-	} else {
-		if rr.WsCFG.ReadDeadlineSeconds < time.Millisecond {
-			rr.WsCFG.ReadDeadlineSeconds = time.Duration(rr.WsCFG.ReadDeadlineSeconds) * time.Second
-		}
-	}
+
+	rr.SetupWsCfgDefaults()
+
 	err := s.trieDomains.Add(r.Domain, rr)
 	if err != nil {
 		return err

@@ -64,6 +64,22 @@ type Route struct {
 	FlushInterval int    `json:"flush_interval" yaml:"flush_interval"`
 }
 
+func (r *Route) SetupWsCfgDefaults() {
+	if r.WsCFG.ReadBufferSize == 0 {
+		r.WsCFG.ReadBufferSize = 2048
+	}
+	if r.WsCFG.WriteBufferSize == 0 {
+		r.WsCFG.WriteBufferSize = 2048
+	}
+	if r.WsCFG.ReadDeadlineSeconds == 0 {
+		r.WsCFG.ReadDeadlineSeconds = time.Second * 60
+	} else {
+		if r.WsCFG.ReadDeadlineSeconds < time.Millisecond {
+			r.WsCFG.ReadDeadlineSeconds = time.Duration(r.WsCFG.ReadDeadlineSeconds) * time.Second
+		}
+	}
+}
+
 type RouteServer struct {
 	OutConnType  ConnType            `json:"out_conn_type" yaml:"out_conn_type"`
 	OutAddress   string              `json:"out_address,omitempty" yaml:"out_address"`
