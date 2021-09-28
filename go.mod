@@ -5,12 +5,13 @@ go 1.12
 require (
 	github.com/armon/go-proxyproto v0.0.0-20190211145416-68259f75880e // indirect
 	github.com/aws/aws-sdk-go v1.19.12
+	github.com/davecgh/go-spew v1.1.0
 	github.com/gabstv/freeport v0.0.0-20171005142102-7952fe2e67ce
 	github.com/gabstv/manners v0.0.0-20180125124109-595c9a4a88f0
 	github.com/gin-contrib/sse v0.0.0-20190301062529-5545eab6dad3 // indirect
 	github.com/gin-gonic/gin v1.3.0
 	github.com/golang/protobuf v1.3.1 // indirect
-	github.com/gorilla/websocket v1.4.0
+	github.com/gorilla/websocket v1.4.3-0.20210424162022-e8629af678b7
 	github.com/json-iterator/go v1.1.6 // indirect
 	github.com/mailgun/manners v0.0.0-20170509042424-df18ed182a60 // indirect
 	github.com/mattn/go-colorable v0.1.1

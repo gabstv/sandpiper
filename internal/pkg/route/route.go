@@ -125,8 +125,10 @@ func (rt *Route) ReverseProxy(w http.ResponseWriter, r *http.Request) {
 		} else {
 			rp := buildReverseProxy(rt)
 			if rt.ForceHTTPS {
+				// println("FORCE HTTPS " + rt.Domain)
 				rt.fn = func(w http.ResponseWriter, r *http.Request) {
-					if r.Header.Get("X-Forwarded-Proto") == "http" {
+					// spew.Dump(r)
+					if r.TLS == nil || r.Header.Get("X-Forwarded-Proto") == "http" {
 						url2 := *r.URL
 						url2.Scheme = "https"
 						url2.Host = r.Host
