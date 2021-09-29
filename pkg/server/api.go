@@ -105,19 +105,20 @@ func runAPIV1(ctx context.Context, sv Server, listen, key string, debug bool) {
 
 		newport := 0
 
-		if jd.OutType == "http" {
+		switch jd.OutType {
+		case "http", "HTTP":
 			sv := rrr.Server
 			sv.OutConnType = route.HTTP
 			rrr.Server = sv
-		} else if jd.OutType == "https_skip_verify" {
+		case "https_skip_verify", "HTTP_SKIP_VERIFY":
 			sv := rrr.Server
 			sv.OutConnType = route.HTTPS_SKIP_VERIFY
 			rrr.Server = sv
-		} else if jd.OutType == "https" {
+		case "https", "HTTPS":
 			sv := rrr.Server
 			sv.OutConnType = route.HTTPS_VERIFY
 			rrr.Server = sv
-		} else if jd.OutType == "auto" {
+		case "auto", "AUTO":
 			ntcp, err := freeport.TCP()
 			if err != nil {
 				c.JSON(http.StatusOK, gin.H{
@@ -134,6 +135,10 @@ func runAPIV1(ctx context.Context, sv Server, listen, key string, debug bool) {
 			}
 			rrr.Server = sv2
 			newport = ntcp
+		case "redirect", "REDIRECT":
+			sv := rrr.Server
+			sv.OutConnType = route.REDIRECT
+			rrr.Server = sv
 		}
 
 		if err := sv.Add(rrr); err != nil {

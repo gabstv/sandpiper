@@ -32,8 +32,16 @@ func (t *Trie) Find(path string) *Node {
 	return mq.First.Val
 }
 
+var UpdateTrieOnAdd = true
+
 func (t *Trie) Add(path string, proute *route.Route) error {
 	if _, ok := t.RawRoutes[path]; ok {
+		if UpdateTrieOnAdd {
+			*t.RawRoutes[path] = *proute
+			// rr := t.RawRoutes[path]
+			spath := strings.Split(path, t.PathSeparator)
+			return t.Root.Add(spath, path, proute)
+		}
 		return errors.New("duplicate path")
 	}
 	spath := strings.Split(path, t.PathSeparator)

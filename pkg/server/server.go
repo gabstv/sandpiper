@@ -255,6 +255,7 @@ func (s *sServer) Run() error {
 	if err := s.startAPI(ctx); err != nil {
 		s.Logger.Println("START API ERROR:", err.Error())
 	}
+	s.Logger.Println("API STARTED")
 	//
 	go func() {
 		s.closeChan = make(chan os.Signal, 1)
