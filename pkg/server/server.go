@@ -73,7 +73,7 @@ func (s *sServer) startAPI(ctx context.Context) error {
 	if s.Cfg.APIListen == "" {
 		return nil
 	}
-	go runAPIV1(ctx, s, s.Cfg.APIListen, s.Cfg.APIKey, s.Cfg.Debug)
+	go runAPIV1(ctx, s, s.Cfg.APIListen, s.Cfg.APIKey, s.Cfg.APIIndexFile, s.Cfg.APIHostFolders, s.Cfg.Debug)
 	if s.Cfg.APIDomain != "" {
 		s.Add(route.Route{
 			Autocert: s.Cfg.APIDomainAutocert,

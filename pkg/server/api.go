@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"path/filepath"
 	"time"
 
 	"github.com/gabstv/freeport"
@@ -12,7 +13,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func runAPIV1(ctx context.Context, sv Server, listen, key string, debug bool) {
+func runAPIV1(ctx context.Context, sv Server, listen, key, indexfile string, hostFolders []string, debug bool) {
 	if !debug {
 		gin.SetMode(gin.ReleaseMode)
 	}
@@ -22,9 +23,21 @@ func runAPIV1(ctx context.Context, sv Server, listen, key string, debug bool) {
 		c.String(http.StatusOK, "OK")
 	})
 
-	r.GET("/", func(c *gin.Context) {
-		c.String(http.StatusOK, "sandpiper api")
-	})
+	if indexfile != "" {
+		r.StaticFile("/", indexfile)
+	} else {
+		r.GET("/", func(c *gin.Context) {
+			c.String(http.StatusOK, "sandpiper api")
+		})
+	}
+	if len(hostFolders) > 0 {
+		for _, fld := range hostFolders {
+			p := filepath.Base(fld)
+			if p != "" {
+				r.Static("/"+p, fld)
+			}
+		}
+	}
 
 	g := r.Group("/v1")
 	// authorization middleware

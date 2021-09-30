@@ -70,6 +70,8 @@ func main() {
 	svCfg.APIKey = cfg.APIKey
 	svCfg.APIDomain = cfg.APIDomain
 	svCfg.APIDomainAutocert = cfg.APIDomainAutocert
+	svCfg.APIIndexFile = cfg.APIIndexFile
+	svCfg.APIHostFolders = cfg.APIHostFolders
 	//
 	svCfg.S3Cache = cfg.S3Cache
 	svCfg.S3ID = cfg.S3ID
@@ -104,6 +106,12 @@ func main() {
 	}
 	if vv := os.Getenv("API_DOMAIN_AUTOCERT"); vv != "" {
 		svCfg.APIDomainAutocert = (vv == "1")
+	}
+	if vv := os.Getenv("API_INDEX_FILE"); vv != "" {
+		svCfg.APIIndexFile = vv
+	}
+	if vv := os.Getenv("API_HOST_FOLDERS"); vv != "" {
+		svCfg.APIHostFolders = strings.Split(vv, ",")
 	}
 	if vv := os.Getenv("LETSENCRYPT_URL"); vv != "" {
 		svCfg.LetsEncryptURL = vv
@@ -344,6 +352,8 @@ type Config struct {
 	APIKey            string        `yaml:"api_key"`
 	APIDomain         string        `yaml:"api_domain"`
 	APIDomainAutocert bool          `yaml:"api_domain_autocert"`
+	APIIndexFile      string        `yaml:"api_index_file"`
+	APIHostFolders    []string      `yaml:"api_host_folders"`
 	S3Cache           bool          `yaml:"s3_cache"`
 	S3ID              string        `yaml:"s3_id"`
 	S3Secret          string        `yaml:"s3_secret"`
