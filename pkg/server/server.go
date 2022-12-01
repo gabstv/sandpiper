@@ -138,10 +138,13 @@ func (s *sServer) setupCertificates() *autocert.Manager {
 		dcache = &dc
 	}
 
+	webmail := os.Getenv("AUTOCERT_EMAIL")
+
 	m = &autocert.Manager{
 		Prompt:     autocert.AcceptTOS,
 		HostPolicy: s.autocertHostPolicy,
 		Cache:      dcache,
+		Email:      webmail,
 	}
 	if s.Cfg.LetsEncryptURL != "" {
 		m.Client = &acme.Client{DirectoryURL: s.Cfg.LetsEncryptURL}
