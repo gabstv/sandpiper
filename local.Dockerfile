@@ -2,7 +2,7 @@ FROM alpine
 
 RUN apk update && apk add git && apk add ca-certificates
 
-#RUN mkdir -p /sandpiper # mkdir not available on scratch
+RUN mkdir -p /sandpiper
 WORKDIR /sandpiper
 
 COPY main /sandpiper/sandpiper

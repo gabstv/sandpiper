@@ -139,6 +139,7 @@ func (s *sServer) setupCertificates() *autocert.Manager {
 	}
 
 	webmail := os.Getenv("AUTOCERT_EMAIL")
+	println("AUTOCERT_EMAIL:", webmail)
 
 	m = &autocert.Manager{
 		Prompt:     autocert.AcceptTOS,
